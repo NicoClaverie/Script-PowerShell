@@ -1,8 +1,10 @@
-# Chemin du raccourci sur le bureau
-$shortcutPath = "$env:USERPROFILE\Desktop\toto.lnk"
+# Variable des raccourcis sur le bureau
+$shortcutPath1 = "$env:USERPROFILE\Desktop\toto.lnk"
+$shortcutPath2 = "$env:USERPROFILE\Desktop\toto.lnk"
+
 
 # Chemin de la nouvelle icône
-$newIconPath = "C:\ico\OneDrive.ico"
+$newIconPath1 = "C:\ico\OneDrive.ico"
 
 # Charger le COMObject pour accéder aux propriétés du raccourci
 $shortcut = New-Object -ComObject WScript.Shell

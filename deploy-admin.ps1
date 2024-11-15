@@ -1,3 +1,27 @@
+# Activer la protection système pour le disque C:
+Write-Output "Activation de la protection système sur le disque C:..."
+vssadmin resize shadowstorage /For=C: /On=C: /MaxSize=5%
+
+# Vérifier si la protection est déjà activée
+$protectionStatus = Get-ComputerRestorePoint -Drive C: -ErrorAction SilentlyContinue
+
+if (-not $protectionStatus) {
+    Write-Output "Activation de la protection système..."
+    Enable-ComputerRestorePoint -Drive C:
+} else {
+    Write-Output "La protection système est déjà activée pour le disque C:."
+}
+
+# Définir l'utilisation maximale de l'espace disque pour les points de restauration
+Write-Output "Définition de l'utilisation maximale à 5%..."
+vssadmin resize shadowstorage /For=C: /On=C: /MaxSize=5%
+
+Write-Output "Protection système configurée avec succès pour le disque C:."
+
+
+
+
+
 
 # Demander le nouveau nom de l'ordinateur
 $newComputerName = Read-Host "Entrez le nouveau nom de l'ordinateur"

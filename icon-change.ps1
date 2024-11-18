@@ -4,6 +4,7 @@
 #                                                #
 ##################################################
 
+# PENSER A ENREGISTRER EN UTF-8 SANS BOM
 
 # Définir les chemins des raccourcis sur le bureau
 $shortcutPath1 = "$env:USERPROFILE\Desktop\toto.lnk"

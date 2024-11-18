@@ -1,3 +1,10 @@
+##################################################
+#                                                #
+#      Script pour le changement des icones      #
+#                                                #
+##################################################
+
+
 # Définir les chemins des raccourcis sur le bureau
 $shortcutPath1 = "$env:USERPROFILE\Desktop\toto.lnk"
 $shortcutPath2 = "$env:USERPROFILE\Desktop\tutu.lnk"
@@ -24,23 +31,3 @@ $link2.IconLocation = $newIconPath2
 $link2.Save()
 Write-Output "Icône du raccourci $shortcutPath2 mise à jour avec succès."
 
-
-
-#######################################################################
-
-
-# Chemin de la photo unique
-$imagePath = "C:\logos\default.jpg"
-
-# Chemin local pour la photo de l'utilisateur
-$userPhotoPath = "$env:USERPROFILE\AppData\Roaming\Microsoft\Windows\AccountPictures"
-
-# Créer le dossier de destination s'il n'existe pas
-if (-not (Test-Path $userPhotoPath)) {
-    New-Item -ItemType Directory -Path $userPhotoPath -Force
-}
-
-# Copier l'image dans le dossier local
-Copy-Item -Path $imagePath -Destination $userPhotoPath -Force
-
-Write-Host "La photo utilisateur a été mise à jour localement avec succès !"

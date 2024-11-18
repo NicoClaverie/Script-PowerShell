@@ -14,10 +14,10 @@
 
 
 # Copier le token dans le presse-papier
-Get-Content -Path "C:\Users\Testeur\Documents\toto.txt" | Set-Clipboard # A changer
+Get-Content -Path "D:\SentinelOne\token.txt" | Set-Clipboard # A changer
 
 # Lancement de l'installation
-Start-Process -FilePath "C:\chemin\vers\programme.exe" # A changer
+Start-Process -FilePath "D:\SentinelOne\SentinelInstaller_windows_64bit_v24_1_4_257.msi" # A changer
 
 
 #---------------------------------

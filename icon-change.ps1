@@ -32,3 +32,8 @@ $link2.IconLocation = $newIconPath2
 $link2.Save()
 Write-Output "Icône du raccourci $shortcutPath2 mise à jour avec succès."
 
+
+# Ouverture de la fenetre pour le changement d'avatar 
+
+Start ms-settings:user
+

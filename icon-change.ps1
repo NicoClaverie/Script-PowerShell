@@ -7,12 +7,12 @@
 # PENSER A ENREGISTRER EN UTF-8 SANS BOM
 
 # Définir les chemins des raccourcis sur le bureau
-$shortcutPath1 = "$env:USERPROFILE\Desktop\toto.lnk"
-$shortcutPath2 = "$env:USERPROFILE\Desktop\tutu.lnk"
+$shortcutPath1 = "$env:USERPROFILE\Desktop\Calculatrice.lnk"
+$shortcutPath2 = "$env:USERPROFILE\Desktop\Pense-bêtes.lnk"
 
 # Définir les chemins des nouvelles icônes
-$newIconPath1 = "C:\Users\Testeur\Documents\EdgeProfile.ico"
-$newIconPath2 = "C:\Users\Testeur\Documents\OneDrive.ico"
+$newIconPath1 = "C:\Logos\Logos GPO\Calculette.ico"
+$newIconPath2 = "C:\Logos\Logos GPO\sticky_note.ico"
 
 # Charger le COMObject pour le premier raccourci
 $shortcut1 = New-Object -ComObject WScript.Shell

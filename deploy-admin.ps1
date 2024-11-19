@@ -17,7 +17,7 @@
 Get-Content -Path "D:\SentinelOne\token.txt" | Set-Clipboard 
 
 # Lancement de l'installation
-Start-Process -FilePath "D:\SentinelOne\SentinelInstaller_windows_64bit_v24_1_4_257.msi" 
+Start-Process -FilePath "D:\SentinelOne\SentinelInstaller_windows_64bit_v24_1_5_277.msi" 
 
 
 #---------------------------------

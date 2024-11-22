@@ -18,7 +18,7 @@ while (-not $choixValide) {
         $choixValide = $true
         # Détermination du chemin du pilote en fonction du choix
         switch ($choixPilote) {
-            1 { $cheminPilote = "C:\imprimantes\Canon.inf" }
+            1 { $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver\CNP60MA64.INF" }
             2 { $cheminPilote = "C:\imprimantes\HP.inf" }
             3 { $cheminPilote = "C:\imprimantes\Lexmark.inf" }
             4 { $cheminPilote = "C:\imprimantes\Xerox.inf" }
@@ -32,20 +32,20 @@ while (-not $choixValide) {
 Write-Host "Vous avez choisi le pilote : $($cheminPilote)"
 # Vérification de l'existence du fichier de pilote et ajout de l'imprimante
 if (Test-Path $cheminPilote) {
-    Add-PrinterPort -Name "$imprimante_Port" -PrinterHostAddress $adresseIP
-    Add-Printer -Name $imprimante -PortName "$imprimante_Port" -DriverInfPath $cheminPilote
+    Add-PrinterDriver -Name "Canon Generic Plus PCL6" -InfPath $cheminPilote
+    Add-PrinterPort -Name $imprimante -PrinterHostAddress $adresseIP
+    Add-Printer -Name $imprimante -PortName "$imprimante" -DriverName $cheminPilote
     Write-Host "Imprimante ajoutée avec succès !" 
 } else {
     Write-Host "Le fichier de pilote n'a pas été trouvé. Vérifiez le chemin."
 }
 
 # Création du port avec le nom de base de l'imprimante
-$portNom = $imprimanteBase
-Add-PrinterPort -Name $portNom -PrinterHostAddress $adresseIP
+# Add-PrinterPort -Name $imprimante -PrinterHostAddress $adresseIP
 
 # Ajout des deux imprimantes sur le même port
-Add-Printer -Name "$imprimanteBase Couleur" -PortName $portNom -DriverInfPath $cheminPilote
-Add-Printer -Name "$imprimanteBase NB" -PortName $portNom -DriverInfPath $cheminPilote
+# Add-Printer -Name "$imprimante Couleur" -PortName $imprimante -DriverInfPath $cheminPilote
+# Add-Printer -Name "$imprimante NB" -PortName $imprimante -DriverInfPath $cheminPilote
 
 Write-Host "Les imprimantes ont été ajoutées avec succès !"
 

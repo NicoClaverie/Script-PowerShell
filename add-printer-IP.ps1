@@ -1,9 +1,9 @@
 # Demande des informations à l'utilisateur
-$imprimante = Read-Host "Entrez le nom de l'imprimante"
-$adresseIP = Read-Host "Entrez l'adresse IP de l'imprimante"
+$imprimante = Read-Host "Nom de l'imprimante"
+$adresseIP = Read-Host "Adresse IP de l'imprimante"
 
 # Menu interactif pour le choix du pilote
-Write-Host "Sélectionnez le fabricant du pilote :"
+Write-Host "Pilote :"
 $choixValide = $false
 
 while (-not $choixValide) {
@@ -18,37 +18,54 @@ while (-not $choixValide) {
         $choixValide = $true
         # Détermination du chemin du pilote en fonction du choix
         switch ($choixPilote) {
-            1 { $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver\CNP60MA64.INF" }
-            2 { $cheminPilote = "C:\imprimantes\HP.inf" }
-            3 { $cheminPilote = "C:\imprimantes\Lexmark.inf" }
-            4 { $cheminPilote = "C:\imprimantes\Xerox.inf" }
+            1 {
+                $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver\CNP60MA64.INF"
+                $versionPilote = "Canon Generic Plus PCL6" 
+            }
+            2 {
+                $cheminPilote = "C:\imprimantes\HP.inf" 
+                $versionPilote = "  " 
+            }
+            3 {
+                $cheminPilote = "C:\imprimantes\Lexmark.inf" 
+                $versionPilote = "  " 
+            }
+            4 {
+                $cheminPilote = "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf\x3UNIVX.inf" 
+                $versionPilote = "  " 
+            }
         }
-    } else {
+    }
+    else {
         Write-Host "Mauvais choix. Veuillez saisir un nombre entre 1 et 4." -ForegroundColor Red
     }
 }
 
-# À ce stade, $choixPilote contient une valeur valide et $cheminPilote est défini
-Write-Host "Vous avez choisi le pilote : $($cheminPilote)"
-# Vérification de l'existence du fichier de pilote et ajout de l'imprimante
-if (Test-Path $cheminPilote) {
-    Add-PrinterDriver -Name "Canon Generic Plus PCL6" -InfPath $cheminPilote
-    Add-PrinterPort -Name $imprimante -PrinterHostAddress $adresseIP
-    Add-Printer -Name $imprimante -PortName "$imprimante" -DriverName $cheminPilote
-    Write-Host "Imprimante ajoutée avec succès !" 
-} else {
-    Write-Host "Le fichier de pilote n'a pas été trouvé. Vérifiez le chemin."
+# Affichage des résultats pour vérification
+Write-Host "Chemin du pilote sélectionné : $cheminPilote"
+Write-Host "Version du pilote sélectionnée : $versionPilote"
+
+# Vérification de la présence du pilote
+$piloteExistant = Get-PrinterDriver | Where-Object { $_.Name -eq $versionPilote }
+
+if ($piloteExistant) {
+    Write-Host "Le pilote '$versionPilote' est déjà installé." -ForegroundColor Green
+}
+else {
+    Write-Host "Le pilote '$versionPilote' n'est pas installé. Installation en cours..." -ForegroundColor Yellow
+    if (Test-Path $cheminPilote) {
+        pnputil /add-driver $cheminPilote /install
+        Write-Host "Pilote '$versionPilote' installé avec succès !" -ForegroundColor Green
+    }
+    else {
+        Write-Host "Le fichier de pilote n'a pas été trouvé. Vérifiez le chemin." -ForegroundColor Red
+        Exit
+    }
 }
 
+# Création du port et ajout de l'imprimante
+Add-PrinterPort -Name $imprimante -PrinterHostAddress $adresseIP
+Add-Printer -Name "$imprimante Couleur" -PortName $imprimante -DriverName $versionPilote
+Add-Printer -Name "$imprimante NB" -PortName $imprimante -DriverName $versionPilote
 
-# pour installation du pilote a utiliser plus tard
-pnputil /add-driver "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf\x3UNIVX.inf" /install
-# Création du port avec le nom de base de l'imprimante
-# Add-PrinterPort -Name $imprimante -PrinterHostAddress $adresseIP
-
-# Ajout des deux imprimantes sur le même port
-# Add-Printer -Name "$imprimante Couleur" -PortName $imprimante -DriverInfPath $cheminPilote
-# Add-Printer -Name "$imprimante NB" -PortName $imprimante -DriverInfPath $cheminPilote
-
-Write-Host "Les imprimantes ont été ajoutées avec succès !"
-
+Write-Host "Les imprimantes '$imprimante Couleur' et '$imprimante NB' ont été ajoutées avec succès !" -ForegroundColor Green

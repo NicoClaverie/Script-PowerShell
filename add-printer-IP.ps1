@@ -40,6 +40,9 @@ if (Test-Path $cheminPilote) {
     Write-Host "Le fichier de pilote n'a pas été trouvé. Vérifiez le chemin."
 }
 
+
+# pour installation du pilote a utiliser plus tard
+pnputil /add-driver "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf\x3UNIVX.inf" /install
 # Création du port avec le nom de base de l'imprimante
 # Add-PrinterPort -Name $imprimante -PrinterHostAddress $adresseIP
 

@@ -42,8 +42,8 @@ do {
                     $versionPilote = "Canon Generic Plus PCL6" 
                 }
                 2 {
-                    $cheminPilote = "C:\imprimantes\HP.inf" 
-                    $versionPilote = "  " 
+                    $cheminPilote = "C:\Imprimantes\HP\pcl6-x64-6.9.0.24630\hpbuio200l.inf" 
+                    $versionPilote = "HP Universal Printing PCL 6" 
                 }
                 3 {
                     $cheminPilote = "C:\imprimantes\Lexmark.inf" 

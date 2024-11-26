@@ -84,6 +84,7 @@ do {
     }
 
     # Création du port et ajout de l'imprimante
+    Add-PrinterDriver -Name $versionPilote
     Add-PrinterPort -Name $imprimante -PrinterHostAddress $adresseIP
     Add-Printer -Name "$imprimante COULEUR" -PortName $imprimante -DriverName $versionPilote
     Add-Printer -Name "$imprimante NB" -PortName $imprimante -DriverName $versionPilote
@@ -116,20 +117,4 @@ Write-Host "Script terminé. Bonne journée !" -ForegroundColor Green
 
 
 
-###############################
 
-Add-Printer : Le pilote spécifié n’existe pas. Utilisez add-printerdriver pour ajouter un nouveau pilote, ou spécifiez
-un pilote existant.
-Au caractère C:\Users\CLAVERIE\Downloads\add-printer-IP.ps1:88 : 5
-+     Add-Printer -Name "$imprimante COULEUR" -PortName $imprimante -Dr ...
-+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (MSFT_Printer:ROOT/StandardCimv2/MSFT_Printer) [Add-Printer], CimException
-    + FullyQualifiedErrorId : HRESULT 0x80070705,Add-Printer
-
-Add-Printer : Le pilote spécifié n’existe pas. Utilisez add-printerdriver pour ajouter un nouveau pilote, ou spécifiez
-un pilote existant.
-Au caractère C:\Users\CLAVERIE\Downloads\add-printer-IP.ps1:89 : 5
-+     Add-Printer -Name "$imprimante NB" -PortName $imprimante -DriverN ...
-+     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    + CategoryInfo          : NotSpecified: (MSFT_Printer:ROOT/StandardCimv2/MSFT_Printer) [Add-Printer], CimException
-    + FullyQualifiedErrorId : HRESULT 0x80070705,Add-Printer

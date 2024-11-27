@@ -50,8 +50,8 @@ do {
                     $versionPilote = "  " 
                 }
                 4 {
-                    $cheminPilote = "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf\x3UNIVX.inf" 
-                    $versionPilote = "  " 
+                    $cheminPilote = "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf"#\x3UNIVX.inf" 
+                    $versionPilote = "Xerox Global Print Driver PCL6" 
                 }
             }
         }

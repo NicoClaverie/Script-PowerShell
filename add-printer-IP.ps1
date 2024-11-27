@@ -38,11 +38,11 @@ do {
             # Détermination du chemin du pilote en fonction du choix
             switch ($choixPilote) {
                 1 {
-                    $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver\CNP60MA64.INF"
+                    $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver3"#CNP60MA64.INF"
                     $versionPilote = "Canon Generic Plus PCL6" 
                 }
                 2 {
-                    $cheminPilote = "C:\Imprimantes\HP\pcl6-x64-6.9.0.24630\hpbuio200l.inf" 
+                    $cheminPilote = "C:\Imprimantes\HP\pcl6-x64-6.9.0.24630"#\hpbuio200l.inf" 
                     $versionPilote = "HP Universal Printing PCL 6" 
                 }
                 3 {
@@ -73,7 +73,11 @@ do {
     else {
         Write-Host "Le pilote '$versionPilote' n'est pas installé. Installation en cours..." -ForegroundColor Yellow
         if (Test-Path $cheminPilote) {
-            pnputil /add-driver $cheminPilote /install
+        Get-ChildItem -Path $cheminPilote -Filter "*.inf" | ForEach-Object 
+        {
+            pnputil /add-driver $_.FullName /install
+        }
+           # pnputil /add-driver $cheminPilote /subdirs /install
             Write-Host "Pilote '$versionPilote' installé avec succès !" -ForegroundColor Green
         }
         else {

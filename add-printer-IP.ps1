@@ -5,10 +5,11 @@
 #############################################
 
 
-### A lancer en mode administrateur ###
+
 
 do {
 
+# Permet une élévation de privilège
     if (-not ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
         Write-Host "Redémarrage du script avec privilèges administratifs..." -ForegroundColor Yellow
         $arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$($MyInvocation.MyCommand.Path)`""
@@ -38,11 +39,11 @@ do {
             # Détermination du chemin du pilote en fonction du choix
             switch ($choixPilote) {
                 1 {
-                    $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver3"#CNP60MA64.INF"
+                    $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver3"
                     $versionPilote = "Canon Generic Plus PCL6" 
                 }
                 2 {
-                    $cheminPilote = "C:\Imprimantes\HP\pcl6-x64-6.9.0.24630"#\hpbuio200l.inf" 
+                    $cheminPilote = "C:\Imprimantes\HP\pcl6-x64-6.9.0.24630"
                     $versionPilote = "HP Universal Printing PCL 6" 
                 }
                 3 {
@@ -50,7 +51,7 @@ do {
                     $versionPilote = "Lexmark Universal v2 XL" 
                 }
                 4 {
-                    $cheminPilote = "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf"#\x3UNIVX.inf" 
+                    $cheminPilote = "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf"
                     $versionPilote = "Xerox Global Print Driver PCL6" 
                 }
             }
@@ -72,12 +73,13 @@ do {
     }
     else {
         Write-Host "Le pilote '$versionPilote' n'est pas installé. Installation en cours..." -ForegroundColor Yellow
+        
+        # Passe tout le repertoire en revu pour prendre tout les .inf en compte
         if (Test-Path $cheminPilote) {
         Get-ChildItem -Path $cheminPilote -Filter "*.inf" | ForEach-Object {
             pnputil /add-driver $_.FullName /install
         }
-           # pnputil /add-driver $cheminPilote /subdirs /install
-            Write-Host "Pilote '$versionPilote' installé avec succès !" -ForegroundColor Green
+           Write-Host "Pilote '$versionPilote' installé avec succès !" -ForegroundColor Green
         }
         else {
             Write-Host "Le fichier de pilote n'a pas été trouvé. Vérifiez le chemin." -ForegroundColor Red

@@ -73,8 +73,7 @@ do {
     else {
         Write-Host "Le pilote '$versionPilote' n'est pas installé. Installation en cours..." -ForegroundColor Yellow
         if (Test-Path $cheminPilote) {
-        Get-ChildItem -Path $cheminPilote -Filter "*.inf" | ForEach-Object 
-        {
+        Get-ChildItem -Path $cheminPilote -Filter "*.inf" | ForEach-Object {
             pnputil /add-driver $_.FullName /install
         }
            # pnputil /add-driver $cheminPilote /subdirs /install

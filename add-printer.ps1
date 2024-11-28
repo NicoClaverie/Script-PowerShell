@@ -1,3 +1,5 @@
+#### NE FONCTIONNE PAS ####
+
 # Demander à l'utilisateur de saisir le nom de l'imprimante (sans le préfixe \\tdsclai27\)
 $imprimanteNom = Read-Host "Entrez le nom de l'imprimante (ex : pr600)"
 

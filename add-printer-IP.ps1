@@ -46,7 +46,7 @@ do {
                     $versionPilote = "HP Universal Printing PCL 6" 
                 }
                 3 {
-                    $cheminPilote = "E:\imprimantes\LEXMARK\Drivers\Print\GDI" 
+                    $cheminPilote = "C:\Imprimantes\LEXMARK\Drivers\Print\GDI" 
                     $versionPilote = "Lexmark Universal v2 XL" 
                 }
                 4 {

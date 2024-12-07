@@ -1,3 +1,8 @@
+# Script récuperation code wifi
+# Source : https://www.dsfc.net/infra/reseau/recuperer-cles-securite-wifi-systeme-windows/
+# Info supplémentaire : https://www.it-connect.fr/wifi-retrouver-la-cle-de-securite-du-reseau-en-cours/
+
+
 $wifi=@()
 #Visualisation des réseaux bloqués
 $cmd0=netsh wlan show blockednetworks

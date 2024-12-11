@@ -5,8 +5,6 @@
 #############################################
 
 
-
-
 do {
 
 # Permet une élévation de privilège
@@ -79,7 +77,7 @@ do {
         Get-ChildItem -Path $cheminPilote -Filter "*.inf" | ForEach-Object {
             pnputil /add-driver $_.FullName /install
         }
-           Write-Host "Pilote '$versionPilote' installé avec succès !" -ForegroundColor Green
+            Write-Host "Pilote '$versionPilote' installé avec succès !" -ForegroundColor Green
         }
         else {
             Write-Host "Le fichier de pilote n'a pas été trouvé. Vérifiez le chemin." -ForegroundColor Red

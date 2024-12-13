@@ -28,6 +28,7 @@ ForEach($row1 in $cmd1)
     }
 }
 #Export du tableau dans un fichier csv
-$wifi|Export-CSV -Path 'c:\wifi.csv' -NoTypeInformation
+$wifi|Export-CSV -Path "C:\Users\$env:USERNAME\Desktop\wifi.txt" -NoTypeInformation
+$wifi|Export-CSV -Path "C:\Users\$env:USERNAME\Desktop\wifi.csv" -NoTypeInformation
 #Visualisation du tableau
 $wifi|Sort -Property ssid|Out-GridView -Title 'Clés des SSID du poste'

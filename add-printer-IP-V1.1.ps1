@@ -1,6 +1,7 @@
 #############################################
 #                                           #
 #      Script pour ajout d'imprimantes      #
+#                Version 1.1                #
 #                                           #
 #############################################
 
@@ -37,7 +38,7 @@ do {
             # Détermination du chemin du pilote en fonction du choix
             switch ($choixPilote) {
                 1 {
-                    $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver3"
+                    $cheminPilote = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver"
                     $versionPilote = "Canon Generic Plus PCL6" 
                 }
                 2 {

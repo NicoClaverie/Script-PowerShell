@@ -5,8 +5,8 @@
 ################################################################################################
 
 # Chemin d'accès du fichier XLSX d'entrée et du fichier CSV de sortie
-$fichierXLSX = "C:\Users\CLAVERIE\Documents\test\lot1.xlsx"
-$fichierCSV = "C:\Users\CLAVERIE\Documents\test\lot2.csv"
+$fichierXLSX = "$env:USERPROFILE\Documents\test\lot1.xlsx"
+$fichierCSV = "$env:USERPROFILE\Documents\test\lot2.csv"
 
 # Charger le contenu du fichier XLSX
 $data = Import-Excel -Path $fichierXLSX
@@ -25,10 +25,11 @@ function Remove-StringSpecialCharacters {
 
       $String = [Text.Encoding]::ASCII.GetString([Text.Encoding]::GetEncoding("Cyrillic").GetBytes($String))
 
-      $String = $String -replace '-', '' `
+      $String = $String  `
          -replace '/', '' `
          -replace '\*', '' `
          -replace "'", "" `
+         #-replace '-', ''
          #-replace ' ', '' `
    }
 

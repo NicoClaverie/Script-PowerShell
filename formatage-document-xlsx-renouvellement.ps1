@@ -42,7 +42,7 @@ foreach ($combination in $uniqueCombinations) {
     $sheetName = $sheetName.Substring(0, [Math]::Min(31, $sheetName.Length))
     
     # Filtrer les lignes correspondant à cette combinaison
-    $filteredData = Import-Csv $ExtractReduit -Delimiter "," | Where-Object {
+    $filteredData = Import-Csv -Path $csvFile -Delimiter "," | Select-Object site, Entreprise, type, libelle, numero, utilisateur | Where-Object {
         $_.Entreprise -eq $combination.Entreprise -and $_.Site -eq $combination.Site
     }
     

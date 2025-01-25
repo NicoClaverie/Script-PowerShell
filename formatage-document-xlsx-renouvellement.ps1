@@ -26,6 +26,16 @@ $csvFile = "$env:USERPROFILE\Documents\test\lot2.csv"
 # Chemin du fichier Excel de sortie
 $xlsxFile = "$env:USERPROFILE\Documents\test\lot2.xlsx"
 
+# Charger les données CSV existantes
+$data = Import-Csv -Path $csvFile -Delimiter ","
+
+# Ajouter les nouvelles colonnes vides
+$data | ForEach-Object {
+    $_ | Add-Member -NotePropertyName "Mot de passe" -NotePropertyValue "" -Force
+    $_ | Add-Member -NotePropertyName "Imprimante" -NotePropertyValue "" -Force
+    $_ | Add-Member -NotePropertyName "Logiciel" -NotePropertyValue "" -Force
+}
+
 # Charger les données CSV et sélectionner uniquement les colonnes Entreprise et Site
 $Extract = Import-Csv -Path $csvFile -Delimiter "," | Select-Object Entreprise, Site
 
@@ -42,24 +52,6 @@ if (Test-Path $xlsxFile) {
     Remove-Item $xlsxFile
 }
 
-# Créer une feuille pour chaque combinaison unique, dans l'ordre alphabétique
-foreach ($combination in $uniqueCombinations) {
-    # Nom de la feuille : Entreprise + Site
-    $sheetName = "$($combination.Site) - $($combination.Entreprise)"
-    
-    # Limiter la longueur des noms de feuille (Excel limite à 31 caractères)
-    $sheetName = $sheetName.Substring(0, [Math]::Min(31, $sheetName.Length))
-    
-    # Filtrer les lignes correspondant à cette combinaison et ne garder que les colonnes pertinentes
-    $filteredData = Import-Csv -Path $csvFile -Delimiter "," |
-    Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur | Where-Object {
-        $_.Entreprise -eq $combination.Entreprise -and $_.Site -eq $combination.Site
-    }
-    
-    # Exporter les données dans une feuille dédiée
-    $filteredData | Export-Excel -Path $xlsxFile -WorksheetName $sheetName -Append
-}
-
 # Ajouter les feuilles par terme unique dans la colonne Libelle
 foreach ($libelle in $uniqueLibelles) {
     # Nom de la feuille : Libelle
@@ -72,6 +64,26 @@ foreach ($libelle in $uniqueLibelles) {
     $filteredData = $data | Where-Object {
         $_.Libelle -eq $libelle.Libelle
     } | Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur
+    
+    # Exporter les données dans une feuille dédiée
+    $filteredData | Export-Excel -Path $xlsxFile -WorksheetName $sheetName -Append
+}
+
+
+
+# Créer une feuille pour chaque combinaison unique, dans l'ordre alphabétique
+foreach ($combination in $uniqueCombinations) {
+    # Nom de la feuille : Entreprise + Site
+    $sheetName = "$($combination.Site) - $($combination.Entreprise)"
+    
+    # Limiter la longueur des noms de feuille (Excel limite à 31 caractères)
+    $sheetName = $sheetName.Substring(0, [Math]::Min(31, $sheetName.Length))
+    
+    # Filtrer les lignes correspondant à cette combinaison et ne garder que les colonnes pertinentes
+    $filteredData = Import-Csv -Path $csvFile -Delimiter "," |
+    Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur, "Mot de passe", Imprimante, Logiciel | Where-Object {
+        $_.Entreprise -eq $combination.Entreprise -and $_.Site -eq $combination.Site
+    }
     
     # Exporter les données dans une feuille dédiée
     $filteredData | Export-Excel -Path $xlsxFile -WorksheetName $sheetName -Append

@@ -15,6 +15,7 @@ $data = Import-Excel -Path $fichierXLSX
 $data | Export-Csv -Path $fichierCSV -Encoding UTF8 -NoTypeInformation
 
 
+
 # Définition de la fonction Remove-StringSpecialCharacters
 function Remove-StringSpecialCharacters {
    param ([string]$String)

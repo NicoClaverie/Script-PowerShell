@@ -66,7 +66,7 @@ foreach ($libelle in $uniqueLibelles) {
     $sheetName = $libelle.Libelle
     
     # Limiter la longueur des noms de feuille
-    $sheetName = $sheetName.Substring(0, [Math]::Min(31, $sheetName.Length))
+    # $sheetName = $sheetName.Substring(0, [Math]::Min(31, $sheetName.Length))
     
     # Filtrer les lignes correspondant à ce Libelle
     $filteredData = $data | Where-Object {

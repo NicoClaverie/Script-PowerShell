@@ -11,9 +11,9 @@ $fichierCSV = "$env:USERPROFILE\Documents\test\lot2.csv"
 # Charger le contenu du fichier XLSX
 $data = Import-Excel -Path $fichierXLSX
 
+
 # Exporter les données dans un fichier CSV avec encodage UTF-8 avec BOM
 $data | Export-Csv -Path $fichierCSV -Encoding UTF8 -NoTypeInformation
-
 
 
 # Définition de la fonction Remove-StringSpecialCharacters
@@ -30,8 +30,9 @@ function Remove-StringSpecialCharacters {
          -replace '/', '' `
          -replace '\*', '' `
          -replace "'", "" `
-         #-replace '-', ''
-         #-replace ' ', '' `
+         -replace "°", " "
+      #-replace '-', ''
+      #-replace ' ', '' `
    }
 
    End {
@@ -46,7 +47,33 @@ $contenu = Get-Content $fichierCSV
 # Appliquer la fonction Remove-StringSpecialCharacters à chaque ligne
 $contenuTraite = foreach ($ligne in $contenu) {
    Remove-StringSpecialCharacters -String $ligne
+
 }
 
 # Écrire les lignes traitées dans un nouveau fichier
 $contenuTraite | Out-File -FilePath $fichierCSV -Encoding utf8
+
+
+##################################################################
+#                                                                #
+#    Ajoute les colonnes Mot de passe, Imprimante et Logiciel    #
+#                                                                #
+##################################################################
+
+
+
+# Rappel le fichier CSV pour modification
+$FileSource = Import-Csv $fichierCSV
+
+# Ajouter les colonnes mot de passe, imprimante, logiciel
+
+foreach ($ligne in $FileSource) {
+   $ligne | Add-Member -MemberType NoteProperty -Name "Mot de passe" -Value ""
+   $ligne | Add-Member -MemberType NoteProperty -Name "Imprimante" -Value ""
+   $ligne | Add-Member -MemberType NoteProperty -Name "Logiciel" -Value ""
+}
+
+
+
+# Écrire les lignes traitées dans un nouveau fichier
+$FileSource | Export-Csv -Path $fichierCSV -Delimiter "," -NoTypeInformation

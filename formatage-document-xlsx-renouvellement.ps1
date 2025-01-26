@@ -29,12 +29,6 @@ $xlsxFile = "$env:USERPROFILE\Documents\test\lot2.xlsx"
 # Charger les données CSV existantes
 $data = Import-Csv -Path $csvFile -Delimiter ","
 
-# Ajouter les nouvelles colonnes vides
-$data | ForEach-Object {
-    $_ | Add-Member -NotePropertyName "Mot de passe" -NotePropertyValue "" -Force
-    $_ | Add-Member -NotePropertyName "Imprimante" -NotePropertyValue "" -Force
-    $_ | Add-Member -NotePropertyName "Logiciel" -NotePropertyValue "" -Force
-}
 
 # Charger les données CSV et sélectionner uniquement les colonnes Entreprise et Site
 $Extract = Import-Csv -Path $csvFile -Delimiter "," | Select-Object Entreprise, Site
@@ -63,7 +57,7 @@ foreach ($libelle in $uniqueLibelles) {
     # Filtrer les lignes correspondant à ce Libelle
     $filteredData = $data | Where-Object {
         $_.Libelle -eq $libelle.Libelle
-    } | Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur
+    } | Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur, "Mot de passe", Imprimante, Logiciel
     
     # Exporter les données dans une feuille dédiée
     $filteredData | Export-Excel -Path $xlsxFile -WorksheetName $sheetName -Append

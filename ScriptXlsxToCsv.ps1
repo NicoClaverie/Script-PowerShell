@@ -68,9 +68,11 @@ $FileSource = Import-Csv $fichierCSV
 # Ajouter les colonnes mot de passe, imprimante, logiciel
 
 foreach ($ligne in $FileSource) {
-   $ligne | Add-Member -MemberType NoteProperty -Name "Mot de passe" -Value ""
-   $ligne | Add-Member -MemberType NoteProperty -Name "Imprimante" -Value ""
-   $ligne | Add-Member -MemberType NoteProperty -Name "Logiciel" -Value ""
+   $ligne | Add-Member -MemberType NoteProperty -Name "Mot de passe" -Value "=RECHERCHEX($F2;'Données utilisateurs'!$A:$A;'Données utilisateurs'!B:B)" # a adapter
+   $ligne | Add-Member -MemberType NoteProperty -Name "Imprimante" -Value "=RECHERCHEX($F2;'Données utilisateurs'!$A:$A;'Données utilisateurs'!C:C)" # a adapter
+   $ligne | Add-Member -MemberType NoteProperty -Name "Logiciel" -Value "=RECHERCHEX($F2;'Données utilisateurs'!$A:$A;'Données utilisateurs'!D:D)" # a adapter
+   # ajouter colonne suivi 
+   # ajouter colonne commentaire
 }
 
 

@@ -1,6 +1,8 @@
-# Chemin vers les fichiers CSV
+################################################
 
-$ExtractLot =  Import-Csv "$env:USERPROFILE\documents\test\lot2.csv"
+
+# Chemins des fichiers CSV
+$ExtractLot = Import-Csv "$env:USERPROFILE\documents\test\lot2.csv"
 $ExtractMail = Import-Csv "$env:userprofile\documents\test\glpi.csv"
 $CSVSortie = "$env:USERPROFILE\documents\test\Mail-Lot.csv"
 
@@ -15,18 +17,26 @@ function Extraire-Nom {
 }
 
 
+# Initialiser un tableau pour stocker les résultats
+#$resultat = @()
 
-# Comparer les fichiers
+# Comparaison et extraction des e-mails correspondants
+foreach ($ligne1 in $ExtractLot) {
+    $nomRecherche = Extraire-Nom $ligne1.Utilisateur
+    $nomFormatEmail = $nomRecherche -replace " ", "."  # Convertir en format prénom.nom
 
-$resultat = foreach ($ligne1 in $ExtractLot) {
-    $NomRechercher = Extraire-Nom $ligne1.UTILISATEUR 
-    $LigneCorrespondante = $ExtractMail | Where-Object { $_.Nom -eq $NomRechercher -replace " ", "." }  # Vérifie si le nom apparaît dans l'e-mail
-    if ($LigneCorrespondante) {
-        $LigneCorrespondante | Select-Object "Adresses de messagerie"
-    }
+    $nomFormatEmail | export-csv -Path $CSVSortie -NoTypeInformation -Encoding UTF8 -Append
 
+    # Trouver les correspondances
+    # $emails = ($ExtractMail | Where-Object { $_."Adresses de messagerie" -match $nomFormatEmail })."Adresses de messagerie"
 
+    # Si on trouve une correspondance, l'ajouter au tableau des résultats
+    #if ($emails) {
+    #     $resultat += @{ "Utilisateur" = $ligne1.Utilisateur; "Adresses de messagerie" = ($emails -join ", ") }
+    #}
 }
 
-# Exporter dans un fichier CSV
+# Exporter les résultats sous forme de CSV
+#$resultat | Export-Csv -Path $CSVSortie -NoTypeInformation -Encoding UTF8
 
+Write-Host "Les adresses e-mail correspondantes ont été exportées vers : $CSVSortie"

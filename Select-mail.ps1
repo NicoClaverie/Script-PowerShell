@@ -49,7 +49,7 @@ foreach ($ligne1 in $ExtractLotFiltre) {
     else {
         # Ajouter l'utilisateur et ses informations (nom, libelle, numero) à la liste des utilisateurs restants
         $utilisateurRestant += [PSCustomObject]@{
-            Utilisateur = $nomFormatEmail
+            Utilisateur = $ligne1.UTILISATEUR
             Libelle     = $ligne1.LIBELLE
             Numero      = $ligne1.NUMERO
         }

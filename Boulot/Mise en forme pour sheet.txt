@@ -1,0 +1,44 @@
+function applyConditionalFormatting() {
+  var sheetNames = ["Thinkpad L13", "Thinkpad T15 Gen 1", "Clairac Siege - GEA", "Clairac Siege - Terres Du Sud"];
+  var columnLetter = "J"; // Colonne où se trouve l'état
+  var columnIndex = 10; // Colonne J = 10
+  
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  sheetNames.forEach(function(sheetName) {
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return; // Vérifier que la feuille existe
+    
+    var lastColumn = sheet.getLastColumn(); // Dernière colonne avec du contenu
+    var range = sheet.getRange("A1:" + columnLetter); // Toute la feuille, basé sur J
+
+    // Effacer les anciennes règles de mise en forme
+    var rules = sheet.getConditionalFormatRules();
+    var newRules = rules.filter(rule => !rule.getRanges().some(r => r.getA1Notation() === range.getA1Notation()));
+    
+    // Ajouter les nouvelles règles de mise en forme conditionnelle
+    newRules.push(
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=$J1="En cours"') // Applique à toute la ligne si J contient "En cours"
+        .setFontColor("blue")
+        .setRanges([range])
+        .build(),
+        
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=$J1="Pret"')
+        .setFontColor("green")
+        .setRanges([range])
+        .build(),
+        
+      SpreadsheetApp.newConditionalFormatRule()
+        .whenFormulaSatisfied('=$J1="Erreur"')
+        .setFontColor("red")
+        .setRanges([range])
+        .build()
+    );
+    
+    sheet.setConditionalFormatRules(newRules);
+  });
+
+  Logger.log("Mise en forme conditionnelle appliquée sur toute la ligne !");
+}

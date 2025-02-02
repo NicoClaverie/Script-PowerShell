@@ -1,0 +1,31 @@
+function syncTextAcrossSheets(e) {
+  var sheetNames = ["Thinkpad L13", "Thinkpad T15 Gen 1", "Clairac Siege - GEA", "Clairac Siege - Terres Du Sud"];
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sourceSheet = e.source.getSheetName();
+  var range = e.range;
+
+  if (!sheetNames.includes(sourceSheet)) return; // Ignore les autres feuilles
+
+  var columnIndex = 5; // Colonne E (Numéro unique)
+  var row = range.getRow();
+  var sheet = ss.getSheetByName(sourceSheet);
+  var id = sheet.getRange(row, columnIndex).getValue();
+
+  if (!id) return; // Ignore si pas d'identifiant unique
+
+  var values = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues(); // Récupère toute la ligne
+
+  sheetNames.forEach(function(name) {
+    if (name === sourceSheet) return; // Ignore la feuille source
+
+    var targetSheet = ss.getSheetByName(name);
+    var targetData = targetSheet.getDataRange().getValues();
+    
+    for (var i = 0; i < targetData.length; i++) {
+      if (targetData[i][columnIndex - 1] === id) { // Vérifie si l'ID correspond
+        targetSheet.getRange(i + 1, 1, 1, values[0].length).setValues(values); // Met à jour toute la ligne
+        break;
+      }
+    }
+  });
+}

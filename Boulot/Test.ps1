@@ -22,28 +22,28 @@ $filteredData | Export-Csv -Path $fichierCSV -Encoding UTF8 -NoTypeInformation
 
 # Définition de la fonction Remove-StringSpecialCharacters
 function Remove-StringSpecialCharacters {
-   param ([string]$String)
+    param ([string]$String)
 
-   Begin {}
+    Begin {}
 
-   Process {
+    Process {
 
-      $String = [Text.Encoding]::ASCII.GetString([Text.Encoding]::GetEncoding("Cyrillic").GetBytes($String))
+        $String = [Text.Encoding]::ASCII.GetString([Text.Encoding]::GetEncoding("Cyrillic").GetBytes($String))
 
-      $String = $String  `
-         -replace '/', '' `
-         -replace '\*', '' `
-         -replace "'", "" `
-         -replace "°", " " `
-         -replace "\)", "" `
-         -replace "\(", ""    
-      #-replace '-', ''
-      #-replace ' ', '' `
-   }
+        $String = $String  `
+            -replace '/', '' `
+            -replace '\*', '' `
+            -replace "'", "" `
+            -replace "°", " " `
+            -replace "\)", "" `
+            -replace "\(", ""    
+        #-replace '-', ''
+        #-replace ' ', '' `
+    }
 
-   End {
-      return $String
-   }
+    End {
+        return $String
+    }
 }
 
 
@@ -52,7 +52,7 @@ $contenu = Get-Content $fichierCSV
 
 # Appliquer la fonction Remove-StringSpecialCharacters à chaque ligne
 $contenuTraite = foreach ($ligne in $contenu) {
-   Remove-StringSpecialCharacters -String $ligne
+    Remove-StringSpecialCharacters -String $ligne
 
 }
 

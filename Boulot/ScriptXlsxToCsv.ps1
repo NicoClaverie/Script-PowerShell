@@ -12,8 +12,12 @@ $fichierCSV = "$env:USERPROFILE\Documents\test\lot2.csv"
 $data = Import-Excel -Path $fichierXLSX
 
 
+# Filtrer les lignes où la colonne "numéro" n'est pas vide
+$filteredData = $data | Where-Object { $_.NUMERO -ne $null -and $_.NUMERO -ne "" }
+
+
 # Exporter les données dans un fichier CSV avec encodage UTF-8 avec BOM
-$data | Export-Csv -Path $fichierCSV -Encoding UTF8 -NoTypeInformation
+$filteredData | Export-Csv -Path $fichierCSV -Encoding UTF8 -NoTypeInformation
 
 
 # Définition de la fonction Remove-StringSpecialCharacters
@@ -70,9 +74,10 @@ $FileSource = Import-Csv $fichierCSV
 # Ajouter les colonnes mot de passe, imprimante, logiciel
 
 foreach ($ligne in $FileSource) {
-   $ligne | Add-Member -MemberType NoteProperty -Name "Mot de passe" -Value ""#=RECHERCHEX($F2;'Données utilisateurs'!$A:$A;'Données utilisateurs'!B:B)" # a adapter
-   $ligne | Add-Member -MemberType NoteProperty -Name "Imprimante" -Value ""#=RECHERCHEX($F2;'Données utilisateurs'!$A:$A;'Données utilisateurs'!C:C)" # a adapter
-   $ligne | Add-Member -MemberType NoteProperty -Name "Logiciel" -Value ""#=RECHERCHEX($F2;'Données utilisateurs'!$A:$A;'Données utilisateurs'!D:D)" # a adapter
+   $ligne | Add-Member -MemberType NoteProperty -Name "Mot de passe" -Value ""
+   $ligne | Add-Member -MemberType NoteProperty -Name "Imprimante" -Value ""
+   $ligne | Add-Member -MemberType NoteProperty -Name "Logiciel" -Value ""
+   $ligne | Add-Member -MemberType NoteProperty -Name "Commentaire" -Value ""
    # ajouter colonne suivi 
    # ajouter colonne commentaire
 }

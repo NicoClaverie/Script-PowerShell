@@ -57,7 +57,7 @@ foreach ($libelle in $uniqueLibelles) {
     # Filtrer les lignes correspondant à ce Libelle
     $filteredData = $data | Where-Object {
         $_.Libelle -eq $libelle.Libelle
-    } | Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur, "Mot de passe", Imprimante, Logiciel
+    } | Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur, "Mot de passe", Imprimante, Logiciel, Commentaire
     
     # Exporter les données dans une feuille dédiée
     $filteredData | Export-Excel -Path $xlsxFile -WorksheetName $sheetName -Append
@@ -75,7 +75,7 @@ foreach ($combination in $uniqueCombinations) {
     
     # Filtrer les lignes correspondant à cette combinaison et ne garder que les colonnes pertinentes
     $filteredData = Import-Csv -Path $csvFile -Delimiter "," |
-    Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur, "Mot de passe", Imprimante, Logiciel | Where-Object {
+    Select-Object Site, Entreprise, Type, Libelle, Numero, Utilisateur, "Mot de passe", Imprimante, Logiciel, Commentaire | Where-Object {
         $_.Entreprise -eq $combination.Entreprise -and $_.Site -eq $combination.Site
     }
     

@@ -1,12 +1,20 @@
+
+
+function XlsToCSV {
 ################################################################################################
 #                                                                                              #
 #  Script pour modifier un fichier XLSX en CSV sans accent, ni caractere speciaux, ni espace   #
 #                                                                                              #
 ################################################################################################
 
+
+# Prérequis : Installer le module ImportExcel si ce n'est pas déjà fait
+Install-Module -Name ImportExcel -Scope CurrentUser
+
+
 # Chemin d'accès du fichier XLSX d'entrée et du fichier CSV de sortie
 $fichierXLSX = "$env:USERPROFILE\Documents\test\lot1.xlsx"
-$fichierCSV = "$env:USERPROFILE\Documents\test\lot2.csv"
+$fichierCSV = "$env:TEMP\lot2.csv"
 
 # Charger le contenu du fichier XLSX
 $data = Import-Excel -Path $fichierXLSX
@@ -53,19 +61,17 @@ $contenu = Get-Content $fichierCSV
 # Appliquer la fonction Remove-StringSpecialCharacters à chaque ligne
 $contenuTraite = foreach ($ligne in $contenu) {
     Remove-StringSpecialCharacters -String $ligne
-
 }
 
 # Écrire les lignes traitées dans un nouveau fichier
 $contenuTraite | Out-File -FilePath $fichierCSV -Encoding utf8
 
 
-##################################################################
-#                                                                #
-#    Ajoute les colonnes Mot de passe, Imprimante et Logiciel    #
-#                                                                #
-##################################################################
-
+###############################################################################
+#                                                                             #
+#    Ajoute les colonnes Mot de passe, Imprimante, Logiciel et commentaire    #
+#                                                                             #
+###############################################################################
 
 
 # Rappel le fichier CSV pour modification
@@ -78,17 +84,13 @@ foreach ($ligne in $FileSource) {
     $ligne | Add-Member -MemberType NoteProperty -Name "Imprimante" -Value ""
     $ligne | Add-Member -MemberType NoteProperty -Name "Logiciel" -Value ""
     $ligne | Add-Member -MemberType NoteProperty -Name "Commentaire" -Value ""
-    # ajouter colonne suivi 
-    # ajouter colonne commentaire
 }
-
 
 
 # Écrire les lignes traitées dans un nouveau fichier
 $FileSource | Export-Csv -Path $fichierCSV -Delimiter "," -NoTypeInformation
-
-#########################################################
-
+}
+function CSVToFormatXLSX {
 
 ####################################################################################
 #                                                                                  #
@@ -97,23 +99,8 @@ $FileSource | Export-Csv -Path $fichierCSV -Delimiter "," -NoTypeInformation
 #                                                                                  #
 ####################################################################################
 
-#
-# Dans un premier temps, il faut installer le module "ImportExcel"
-# "Install-Module -Name ImportExcel"
-
-# pour plus tard utiliser powershell form
-# Utiliser "ScriptXlsxToCsv.ps1" pour générer un fichier CSV exploitable
-
-# $Extract = Import-Csv -Path $env:USERPROFILE\Documents\test\lot2.csv -Delimiter "," | Select-Object Entreprise, site 
-
-# Prérequis : Installer le module ImportExcel si ce n'est pas déjà fait
-# Install-Module -Name ImportExcel -Scope CurrentUser
-
-# Prérequis : Installer le module ImportExcel si ce n'est pas déjà fait
-# Install-Module -Name ImportExcel -Scope CurrentUser
-
 # Chemin du fichier CSV source
-$csvFile = "$env:USERPROFILE\Documents\test\lot2.csv"
+$csvFile = "$env:TEMP\lot2.csv"
 
 # Chemin du fichier Excel de sortie
 $xlsxFile = "$env:USERPROFILE\Documents\test\lot2.xlsx"
@@ -155,8 +142,6 @@ foreach ($libelle in $uniqueLibelles) {
     $filteredData | Export-Excel -Path $xlsxFile -WorksheetName $sheetName -Append
 }
 
-
-
 # Créer une feuille pour chaque combinaison unique, dans l'ordre alphabétique
 foreach ($combination in $uniqueCombinations) {
     # Nom de la feuille : Entreprise + Site
@@ -175,18 +160,20 @@ foreach ($combination in $uniqueCombinations) {
     $filteredData | Export-Excel -Path $xlsxFile -WorksheetName $sheetName -Append
 }
 
-
-
 Write-Host "Fichier Excel généré avec succès, feuilles classées par ordre alphabétique : $xlsxFile"
+}
 
 
 
-
-##############################################
-
+function TriMail {
+########################################################################################################
+#                                                                                                      #
+#     Script pour comparer les utilisateurs du lot en cours et les adresses mail présent dans GLPI     #
+#                                                                                                      #
+########################################################################################################
 
 # Chemins des fichiers CSV
-$ExtractLot = Import-Csv "$env:USERPROFILE\documents\test\lot2.csv" -Delimiter "," | Select-Object UTILISATEUR, LIBELLE, NUMERO
+$ExtractLot = Import-Csv "$env:TEMP\lot2.csv" -Delimiter "," | Select-Object UTILISATEUR, LIBELLE, NUMERO
 $ExtractMail = Import-Csv "$env:userprofile\documents\test\glpi.csv" -Delimiter ";" | Select-Object "Adresses de messagerie"
 $CSVSortieMail = "$env:USERPROFILE\documents\test\mail-a-envoye.csv"
 $CSVSortieRestant = "$env:USERPROFILE\documents\test\utilisateur-restant.csv"
@@ -250,3 +237,8 @@ $mailAEnvoye | Export-Csv $CSVSortieMail -NoTypeInformation -Encoding UTF8
 $utilisateurRestant | Export-Csv $CSVSortieRestant -NoTypeInformation -Encoding UTF8
 
 Write-Output "✅ Résultats enregistrés dans mail-a-envoye.csv et utilisateur-restant.csv"
+}
+
+XlsToCSV
+CSVToFormatXLSX
+TriMail

@@ -1,5 +1,38 @@
 
 
+function menu {
+    while ($true) {
+        Write-Host "Script de mise en forme et d'extraction d'information"
+        Write-Host "1. Mise en forme fichier XLSX"
+        Write-Host "2. Extraction des mails pour la prise de contact"
+        Write-Host "3. Faire les deux"
+        Write-Host "Q. Sortir du script"
+        Write-Host " "
+        
+        $ChoixMenu = Read-Host "Choix ? :"
+
+        switch ($ChoixMenu) {
+            '1' {
+                XlsToCSV
+                CSVToFormatXLSX
+            }
+            '2' {
+                TriMail
+            }
+            '3' {
+                XlsToCSV
+                CSVToFormatXLSX
+                TriMail
+            }
+            'q' {
+                Exit
+            }
+        }
+
+    }
+}
+
+
 function XlsToCSV {
 ################################################################################################
 #                                                                                              #
@@ -239,6 +272,5 @@ $utilisateurRestant | Export-Csv $CSVSortieRestant -NoTypeInformation -Encoding 
 Write-Output "✅ Résultats enregistrés dans mail-a-envoye.csv et utilisateur-restant.csv"
 }
 
-XlsToCSV
-CSVToFormatXLSX
-TriMail
+
+menu

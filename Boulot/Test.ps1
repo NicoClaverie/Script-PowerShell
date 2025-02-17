@@ -9,17 +9,25 @@ function menu {
         Write-Host "Q. Sortir du script"
         Write-Host " "
         
-        $ChoixMenu = Read-Host "Choix ? :"
+        $ChoixMenu = Read-Host "Choix ? "
 
         switch ($ChoixMenu) {
             '1' {
+                XlsSelect
+                OutXls
                 XlsToCSV
                 CSVToFormatXLSX
             }
             '2' {
+                XlsSelect
+                OutMail
+                XlsToCSV
                 TriMail
             }
             '3' {
+                XlsSelect
+                OutXls
+                OutMail
                 XlsToCSV
                 CSVToFormatXLSX
                 TriMail
@@ -31,6 +39,63 @@ function menu {
 
     }
 }
+
+
+function XlsSelect {
+    Add-Type -AssemblyName "System.Windows.Forms"
+
+# Créer une boîte de dialogue pour sélectionner le fichier
+$dialog = New-Object System.Windows.Forms.OpenFileDialog
+$dialog.Filter = "Fichiers Excel (*.xlsx)|*.xlsx|Tous les fichiers (*.*)|*.*"  # Filtre pour les fichiers .xlsx
+$dialog.Title = "Sélectionnez un fichier Excel"
+
+# Afficher la boîte de dialogue et obtenir le chemin du fichier
+if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    $cheminFichierXls = $dialog.FileName
+    Write-Host "Fichier sélectionné : $cheminFichierXls"
+} else {
+    Write-Host "Aucun fichier sélectionné."
+}
+}
+
+
+function OutXls {
+
+    Add-Type -AssemblyName "System.Windows.Forms"
+
+# Boîte de dialogue pour sélectionner un dossier
+$folderDialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$folderDialog.Description = "Sélectionnez le dossier de destination pour le fichier XLS"
+
+if ($folderDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    $cheminDossierXls = $folderDialog.SelectedPath
+    Write-Host "Dossier sélectionné : $cheminDossierXls"
+} else {
+    Write-Host "Aucun dossier sélectionné."
+}
+
+}
+
+function OutMail {
+
+    Add-Type -AssemblyName "System.Windows.Forms"
+
+# Boîte de dialogue pour sélectionner un dossier
+$folderDialog = New-Object System.Windows.Forms.FolderBrowserDialog
+$folderDialog.Description = "Sélectionnez le dossier de destination pour les CSV de Mail"
+
+if ($folderDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+    $cheminDossierMail = $folderDialog.SelectedPath
+    Write-Host "Dossier sélectionné : $cheminDossierMail"
+} else {
+    Write-Host "Aucun dossier sélectionné."
+}
+
+}
+
+
+
+
 
 
 function XlsToCSV {
@@ -46,7 +111,7 @@ Install-Module -Name ImportExcel -Scope CurrentUser
 
 
 # Chemin d'accès du fichier XLSX d'entrée et du fichier CSV de sortie
-$fichierXLSX = "$env:USERPROFILE\Documents\test\lot1.xlsx"
+$fichierXLSX = $cheminFichierXls
 $fichierCSV = "$env:TEMP\lot2.csv"
 
 # Charger le contenu du fichier XLSX
@@ -123,6 +188,9 @@ foreach ($ligne in $FileSource) {
 # Écrire les lignes traitées dans un nouveau fichier
 $FileSource | Export-Csv -Path $fichierCSV -Delimiter "," -NoTypeInformation
 }
+
+
+############################
 function CSVToFormatXLSX {
 
 ####################################################################################
@@ -162,9 +230,6 @@ if (Test-Path $xlsxFile) {
 foreach ($libelle in $uniqueLibelles) {
     # Nom de la feuille : Libelle
     $sheetName = $libelle.Libelle
-    
-    # Limiter la longueur des noms de feuille
-    # $sheetName = $sheetName.Substring(0, [Math]::Min(31, $sheetName.Length))
     
     # Filtrer les lignes correspondant à ce Libelle
     $filteredData = $data | Where-Object {
@@ -269,7 +334,7 @@ $mailAEnvoye | Export-Csv $CSVSortieMail -NoTypeInformation -Encoding UTF8
 # Exporter les utilisateurs non trouvés dans utilisateur-restant.csv avec les colonnes Libelle et Numero
 $utilisateurRestant | Export-Csv $CSVSortieRestant -NoTypeInformation -Encoding UTF8
 
-Write-Output "✅ Résultats enregistrés dans mail-a-envoye.csv et utilisateur-restant.csv"
+Write-Output " Résultats enregistrés dans mail-a-envoye.csv et utilisateur-restant.csv"
 }
 
 

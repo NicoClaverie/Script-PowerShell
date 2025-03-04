@@ -5,7 +5,7 @@
 ################################################################################################
 
 # Chemin d'accès du fichier XLSX d'entrée et du fichier CSV de sortie
-$fichierXLSX = "$env:USERPROFILE\Documents\test\lot1.xlsx"
+$fichierXLSX = "$env:USERPROFILE\Documents\test\contrat_loc2_parc_info_Lotus.xlsx"
 $fichierCSV = "$env:USERPROFILE\Documents\test\lot2.csv"
 
 # Charger le contenu du fichier XLSX

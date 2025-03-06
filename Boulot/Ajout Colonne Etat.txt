@@ -1,0 +1,32 @@
+function addEtatColumn() {
+  var sheetNames = ["Thinkpad L13", "Thinkpad T15 Gen 1", "Clairac Siege - GEA", "Clairac Siege - Terres Du Sud"];
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  sheetNames.forEach(function(sheetName) {
+    var sheet = ss.getSheetByName(sheetName);
+    if (!sheet) return;
+
+    var lastColumn = sheet.getLastColumn();
+    var headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+
+    if (headers.includes("État")) {
+      Logger.log("La colonne 'État' existe déjà dans " + sheetName);
+      return; // Ne fait rien si elle est déjà là
+    }
+
+    // Ajoute la colonne "État"
+    sheet.insertColumnAfter(lastColumn);
+    var etatColumn = lastColumn + 1;
+    sheet.getRange(1, etatColumn).setValue("État");
+
+    // Applique la liste déroulante
+    var rule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(["Non fait", "En cours", "Pret", "Erreur"])
+      .setAllowInvalid(false) // Empêche les valeurs non valides
+      .build();
+
+    sheet.getRange(2, etatColumn, sheet.getMaxRows() - 1).setDataValidation(rule);
+
+    Logger.log("Colonne 'État' ajoutée et configurée dans " + sheetName);
+  });
+}

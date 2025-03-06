@@ -73,6 +73,8 @@ foreach ($combination in $uniqueCombinations) {
     # Limiter la longueur des noms de feuille (Excel limite à 31 caractères)
     $sheetName = $sheetName.Substring(0, [Math]::Min(31, $sheetName.Length))
     
+    "`"$sheetName`"," | Add-Content -Path $env:USERPROFILE\Documents\test\sheetname.txt 
+
     # Filtrer les lignes correspondant à cette combinaison et ne garder que les colonnes pertinentes
     $filteredData = Import-Csv -Path $csvFile -Delimiter "," |
     Select-Object Site, Societe, "Nom Micro", Libelle, Numero, Utilisateur, "Mot de passe", Imprimante, Logiciel, Commentaire | Where-Object {

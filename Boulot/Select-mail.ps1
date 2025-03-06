@@ -1,5 +1,5 @@
 # Chemins des fichiers CSV
-$ExtractLot = Import-Csv "$env:USERPROFILE\documents\test\lot2.csv" -Delimiter "," | Select-Object UTILISATEUR, LIBELLE, NUMERO
+$ExtractLot = Import-Csv "$env:USERPROFILE\documents\test\lot2.csv" -Delimiter "," | Select-Object UTILISATEUR, LIBELLE, NUMERO, Societe, Site
 $ExtractMail = Import-Csv "$env:userprofile\documents\test\glpi.csv" -Delimiter ";" | Select-Object "Adresses de messagerie"
 $CSVSortieMail = "$env:USERPROFILE\documents\test\mail-a-envoye.csv"
 $CSVSortieRestant = "$env:USERPROFILE\documents\test\utilisateur-restant.csv"
@@ -16,7 +16,7 @@ function Extraire-Nom {
 
 # Filtrer les ordinateurs uniquement
 $ExtractLotFiltre = $ExtractLot | Where-Object {
-    ($_ -notmatch "ECRAN IIYAMA prolite 22") -and ($_ -notmatch "DOCK Hybrid USB-C")
+    ($_ -notmatch "ECRAN IIYAMA prolite 22") -and ($_ -notmatch "DOCK Hybrid USB-C")# -and ($_ -notmatch "ThinkCentre M75q-2")
 }
 
 # Mise en forme pour n'avoir que les prenom.nom des adresses mail
@@ -49,6 +49,8 @@ foreach ($ligne1 in $ExtractLotFiltre) {
     else {
         # Ajouter l'utilisateur et ses informations (nom, libelle, numero) à la liste des utilisateurs restants
         $utilisateurRestant += [PSCustomObject]@{
+            Societe = $ligne1.Societe
+            Site = $ligne1.site
             Utilisateur = $ligne1.UTILISATEUR
             Libelle     = $ligne1.LIBELLE
             Numero      = $ligne1.NUMERO

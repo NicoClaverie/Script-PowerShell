@@ -6,18 +6,66 @@
 #######################################################################
 
 
+#-----------------------------
+#
+#  Formate la barre de recherche
+#
+#-----------------------------
+
+
+# Déplacer la barre des tâches à gauche
+$path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3"
+$values = Get-ItemProperty -Path $path
+$values.Settings[12] = 0  # 0 = Gauche, 1 = Haut, 2 = Droite, 3 = Bas
+Set-ItemProperty -Path $path -Name Settings -Value $values.Settings
+Stop-Process -Name explorer -Force  # Redémarrer l'explorateur
+
+# Masquer la recherche
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 0
+Stop-Process -Name explorer -Force  # Redémarrer l'explorateur
+
+
+
+#--------------------------------------
+#
+# Modifie la gestion alimentation de l'USB 
+#
+#--------------------------------------
+
+
+# Désactiver l'option "Autoriser l'ordinateur à éteindre ce périphérique pour économiser l'énergie" pour tous les périphériques USB
+$usbDevices = Get-PnpDevice | Where-Object { $_.Class -eq "USB" -and $_.Status -eq "OK" }
+
+foreach ($device in $usbDevices) {
+    $instanceId = $device.InstanceId
+    $powerManagementPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$instanceId\Device Parameters"
+
+    if (Test-Path $powerManagementPath) {
+        Set-ItemProperty -Path $powerManagementPath -Name "AllowIdleIrpInD3" -Value 0
+        Set-ItemProperty -Path $powerManagementPath -Name "EnableSelectiveSuspend" -Value 0
+        Write-Output "Modifié : $instanceId"
+    } else {
+        Write-Output "Non trouvé : $instanceId"
+    }
+}
+
+Write-Output "Modification terminée. Un redémarrage peut être nécessaire."
+
+
+
 #---------------------------------
 #
 # Lancement de l'installation Sentinel One
+# En attente 
 #
 #---------------------------------
 
 
 # Copier le token dans le presse-papier
-Get-Content -Path "D:\SentinelOne\token.txt" | Set-Clipboard 
+# Get-Content -Path "D:\SentinelOne\token.txt" | Set-Clipboard 
 
 # Lancement de l'installation
-Start-Process -FilePath "D:\SentinelOne\SentinelInstaller_windows_64bit_v24_1_5_277.msi" 
+# Start-Process -FilePath "D:\SentinelOne\SentinelInstaller_windows_64bit_v24_1_5_277.msi" 
 
 
 #---------------------------------

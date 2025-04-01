@@ -20,11 +20,17 @@ $values.Settings[12] = 0  # 0 = Gauche, 1 = Haut, 2 = Droite, 3 = Bas
 Set-ItemProperty -Path $path -Name Settings -Value $values.Settings
 Stop-Process -Name explorer -Force  # Redémarrer l'explorateur
 
-# Masquer la recherche
+# Masquer la recherche dans la barre des tâches
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 0
-Stop-Process -Name explorer -Force  # Redémarrer l'explorateur
 
+# Désactiver la Vue des tâches
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowTaskViewButton" -Value 0
 
+# Désactiver les Widgets
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarDa" -Value 0
+
+# Redémarrer l'explorateur Windows pour appliquer les changements
+Stop-Process -Name explorer -Force
 
 #--------------------------------------
 #

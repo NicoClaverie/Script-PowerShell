@@ -2,6 +2,7 @@
 #######################################################################
 #                                                                     #
 #    SCRIPT POUR DEPLOIMENT POSTE DE TRAVAIL, A APPLIQUER EN ADMIN    #
+#                          !!! WORK IN PROGRESS !!!                   #
 #                                                                     #
 #######################################################################
 
@@ -39,24 +40,13 @@ Stop-Process -Name explorer -Force
 #--------------------------------------
 
 
-# Désactiver l'option "Autoriser l'ordinateur à éteindre ce périphérique pour économiser l'énergie" pour tous les périphériques USB
-$usbDevices = Get-PnpDevice | Where-Object { $_.Class -eq "USB" -and $_.Status -eq "OK" }
+$powerMgmt = Get-CimInstance -ClassName MSPower_DeviceEnable -Namespace root/WMI |
+    where-Object InstanceName -like USB*
 
-foreach ($device in $usbDevices) {
-    $instanceId = $device.InstanceId
-    $powerManagementPath = "HKLM:\SYSTEM\CurrentControlSet\Enum\$instanceId\Device Parameters"
-
-    if (Test-Path $powerManagementPath) {
-        Set-ItemProperty -Path $powerManagementPath -Name "AllowIdleIrpInD3" -Value 0
-        Set-ItemProperty -Path $powerManagementPath -Name "EnableSelectiveSuspend" -Value 0
-        Write-Output "Modifié : $instanceId"
-    } else {
-        Write-Output "Non trouvé : $instanceId"
-    }
+foreach ($p in $powerMgmt) {
+    $p.Enable = $false
+    Set-CimInstance -InputObject $p
 }
-
-Write-Output "Modification terminée. Un redémarrage peut être nécessaire."
-
 
 
 #---------------------------------
@@ -90,7 +80,7 @@ vssadmin resize shadowstorage /For=C: /On=C: /MaxSize=5%
 Enable-ComputerRestore -Drive "C:\"
 
 # Ouverture de la fenetre protection systeme pour verification
-SystemPropertiesProtection
+# SystemPropertiesProtection
 
 Write-Host "Protection système configurée avec succès pour le disque C:."
 
@@ -99,26 +89,60 @@ Write-Host "Protection système configurée avec succès pour le disque C:."
 #
 # Changement nom, description et domaine du pc
 #
+#  !!! EN ATTENTE !!!
 #---------------------------------
 
 
 # Demander le nouveau nom de l'ordinateur
-Write-host "Pensez a ajouter X au nom de l'ordinateur" -ForegroundColor Red
-$newComputerName = Read-Host "Entrez le nouveau nom de l'ordinateur"
+#Write-host "Pensez a ajouter X au nom de l'ordinateur" -ForegroundColor Red
+#$newComputerName = Read-Host "Entrez le nouveau nom de l'ordinateur"
 
 # Demander la nouvelle description de l'ordinateur
-$newDescription = Read-Host "Entrez la description de l'ordinateur"
+#$newDescription = Read-Host "Entrez la description de l'ordinateur"
 
 # Changer le nom de l'ordinateur
-Write-Output "Changement du nom de l'ordinateur en '$newComputerName' "
-Rename-Computer -NewName $newComputerName -Force
+#Write-Output "Changement du nom de l'ordinateur en '$newComputerName' "
+#Rename-Computer -NewName $newComputerName -Force
 
 # Changer la description de l'ordinateur dans le registre
-Write-Output "Modification de la description en '$newDescription' "
-Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" -Name "srvcomment" -Value $newDescription
+#Write-Output "Modification de la description en '$newDescription' "
+#Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" -Name "srvcomment" -Value $newDescription
 
 # Joindre l'ordinateur au domaine
-Write-Output "Ajout de l'ordinateur au domaine 'TER_SUD' "
-Add-Computer -DomainName TER_SUD -Credential (Get-Credential) -Force -Restart
+#Write-Output "Ajout de l'ordinateur au domaine 'TER_SUD' "
+#Add-Computer -DomainName TER_SUD -Credential (Get-Credential) -Force -Restart
 
-Write-Output "Les modifications ont été appliquées. L'ordinateur va redémarrer."
+#Write-Output "Les modifications ont été appliquées. L'ordinateur va redémarrer."
+
+
+#--------------------------
+#
+#  Installation des programmes via Winget
+#
+#---------------------------
+
+winget install  google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice 9NBLGGH4QGHW 9NR5B8GVVM13
+
+#-----------------------------
+#
+#   Désactiver les Pare-feu 
+#
+#-----------------------------
+
+Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+
+#-----------------------------
+#
+#  Ajout du NAS
+#
+#-----------------------------
+
+net use P: \\nasqnap\share /user:ADMIN@dom_maine /p:yes
+
+#------------------------------
+#
+#  Copie des dossiers Logos, Imprimantes et Maintenances sur le disque C:\
+#
+#------------------------------
+
+Robocopy "\\nasqnap\share\Informatique\MASTER\WIN11\Sur C" C:\boot

@@ -2,7 +2,7 @@
 #######################################################################
 #                                                                     #
 #    SCRIPT POUR DEPLOIMENT POSTE DE TRAVAIL, A APPLIQUER EN ADMIN    #
-#                          !!! WORK IN PROGRESS !!!                   #
+#                     !!! WORK IN PROGRESS !!!                        #
 #                                                                     #
 #######################################################################
 
@@ -13,13 +13,10 @@
 #
 #-----------------------------
 
+# Déplacer la barre des tâches à gauche"
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "TaskbarAl" -Value 0 -Force
 
-# Déplacer la barre des tâches à gauche
-$path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\StuckRects3"
-$values = Get-ItemProperty -Path $path
-$values.Settings[12] = 0  # 0 = Gauche, 1 = Haut, 2 = Droite, 3 = Bas
-Set-ItemProperty -Path $path -Name Settings -Value $values.Settings
-Stop-Process -Name explorer -Force  # Redémarrer l'explorateur
+Set-ItemProperty -Path HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced -Name Hidden -Value 1
 
 # Masquer la recherche dans la barre des tâches
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 0
@@ -48,7 +45,6 @@ foreach ($p in $powerMgmt) {
     Set-CimInstance -InputObject $p
 }
 
-
 #---------------------------------
 #
 # Lancement de l'installation Sentinel One
@@ -56,20 +52,17 @@ foreach ($p in $powerMgmt) {
 #
 #---------------------------------
 
-
 # Copier le token dans le presse-papier
 # Get-Content -Path "D:\SentinelOne\token.txt" | Set-Clipboard 
 
 # Lancement de l'installation
 # Start-Process -FilePath "D:\SentinelOne\SentinelInstaller_windows_64bit_v24_1_5_277.msi" 
 
-
 #---------------------------------
 #
 # Activation de la protection système pour le disque C:
 #
 #---------------------------------
-
 
 Write-Host "Activation de la protection système sur le disque C:..."
 
@@ -121,7 +114,8 @@ Write-Host "Protection système configurée avec succès pour le disque C:."
 #
 #---------------------------
 
-winget install  google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice 9NBLGGH4QGHW 9NR5B8GVVM13
+winget install  google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice
+# 9NBLGGH4QGHW 9NR5B8GVVM13
 
 #-----------------------------
 #
@@ -145,4 +139,32 @@ net use P: \\nasqnap\share /user:ADMIN@dom_maine /p:yes
 #
 #------------------------------
 
-Robocopy "\\nasqnap\share\Informatique\MASTER\WIN11\Sur C" C:\boot
+Robocopy "\\nasqnap\share\Informatique\MASTER\WIN11\Sur C" C:\
+
+#--------------------------------------
+#
+#   Passe tout les dossiers sur la racine C: en masqué
+#
+#--------------------------------------
+
+Get-ChildItem -Path C:\ -Directory | ForEach-Object {
+    Set-ItemProperty -Path $_.FullName -Name Attributes -Value Hidden
+}
+
+#------------------------------------
+#
+#  Active l'affichage des éléments masqué 
+#
+#------------------------------------
+
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name Hidden -Value 1
+
+Stop-Process -Name explorer -Force
+
+#------------------------------------
+#
+#  Installer .NET Framework net3.5
+#
+#------------------------------------
+
+Enable-WindowsOptionalFeature -Online -FeatureName NetFx3 -All

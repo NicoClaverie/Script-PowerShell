@@ -147,8 +147,26 @@ Enable-ComputerRestore -Drive "C:\"
 #
 #---------------------------
 
+# Vérifie si winget est disponible
+if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
+    Write-Host "`n[🔧] Winget n'est pas installé. Installation en cours..." -ForegroundColor Yellow
+
+    $progressPreference = 'silentlyContinue'
+    Write-Host "📦 Installation du module WinGet PowerShell depuis PSGallery..."
+    Install-PackageProvider -Name NuGet -Force | Out-Null
+    Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery | Out-Null
+
+    Write-Host "⚙️ Utilisation de Repair-WinGetPackageManager pour bootstrapper WinGet..."
+    Repair-WinGetPackageManager
+
+    Write-Host "`n✅ Winget a été installé avec succès." -ForegroundColor Green
+} else {
+    Write-Host "`n✅ Winget est déjà installé." -ForegroundColor Green
+}
+
+# Installation des logiciels 
 winget install  google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice Google.GoogleDrive Adobe.Acrobat.Reader.64-bit
-# 9NBLGGH4QGHW 9NR5B8GVVM13
+
 
 #-----------------------------
 #

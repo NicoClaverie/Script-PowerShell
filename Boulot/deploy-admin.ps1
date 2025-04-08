@@ -165,7 +165,7 @@ if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
 }
 
 # Installation des logiciels 
-winget install  google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice Google.GoogleDrive Adobe.Acrobat.Reader.64-bit
+winget install --accept-package-agreements --accept-source-agreements google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice Google.GoogleDrive Adobe.Acrobat.Reader.64-bit
 
 
 #-----------------------------

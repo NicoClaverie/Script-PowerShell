@@ -71,7 +71,7 @@ Stop-Process -Name explorer -Force
 
 
 $powerMgmt = Get-CimInstance -ClassName MSPower_DeviceEnable -Namespace root/WMI |
-    where-Object InstanceName -like USB*
+where-Object InstanceName -like USB*
 
 foreach ($p in $powerMgmt) {
     $p.Enable = $false
@@ -149,19 +149,20 @@ Enable-ComputerRestore -Drive "C:\"
 
 # Vérifie si winget est disponible
 if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
-    Write-Host "`n[🔧] Winget n'est pas installé. Installation en cours..." -ForegroundColor Yellow
+    Write-Host "Winget n'est pas installé. Installation en cours..." -ForegroundColor Yellow
 
     $progressPreference = 'silentlyContinue'
-    Write-Host "📦 Installation du module WinGet PowerShell depuis PSGallery..."
+    Write-Host "Installation du module WinGet PowerShell depuis PSGallery..."
     Install-PackageProvider -Name NuGet -Force | Out-Null
     Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery | Out-Null
 
-    Write-Host "⚙️ Utilisation de Repair-WinGetPackageManager pour bootstrapper WinGet..."
+    Write-Host "Utilisation de Repair-WinGetPackageManager pour bootstrapper WinGet..."
     Repair-WinGetPackageManager
 
-    Write-Host "`n✅ Winget a été installé avec succès." -ForegroundColor Green
-} else {
-    Write-Host "`n✅ Winget est déjà installé." -ForegroundColor Green
+    Write-Host "Winget a été installé avec succès." -ForegroundColor Green
+}
+else {
+    Write-Host "Winget est déjà installé." -ForegroundColor Green
 }
 
 # Installation des logiciels 
@@ -174,7 +175,7 @@ winget install --accept-package-agreements --accept-source-agreements google.chr
 #
 #-----------------------------
 
-Set-NetFirewallProfile -Profile Domain,Public,Private -Enabled False
+Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
 
 #-----------------------------
 #
@@ -220,6 +221,7 @@ Enable-WindowsOptionalFeature -Online -FeatureName NetFx3 -All
 
 Get-AppxPackage *xbox* -allusers | Remove-AppxPackage
 Get-AppxPackage *teams* -allusers | Remove-AppxPackage
+Get-AppxPackage *outlook* -allusers | Remove-AppxPackage
 
 #-----------------------------------------
 #

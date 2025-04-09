@@ -32,7 +32,7 @@ Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_Layout" -Value 1
 
 # 2. Désactiver les applications récemment ajoutées
-Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_TrackApps" -Value 0
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_TrackApps" -Value 1 # ou Start_ShowRecentlyAddedApps
 
 # 3. Désactiver les applications les plus utilisées
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Start_TrackProgs" -Value 0
@@ -203,8 +203,6 @@ Get-ChildItem -Path C:\ -Directory | ForEach-Object {
     Set-ItemProperty -Path $_.FullName -Name Attributes -Value Hidden
 }
 
-
-
 #------------------------------------
 #
 #  Installer .NET Framework net3.5
@@ -225,20 +223,106 @@ Get-AppxPackage *outlook* -allusers | Remove-AppxPackage
 
 #-----------------------------------------
 #
-#  
+#  Désactiver l'écran de veille
 #
 #-----------------------------------------
 
+# 1. Désactive l'activation de l'écran de veille
+Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name ScreenSaveActive -Value "0" -Type String -Force
 
+# 2. Efface le chemin vers un éventuel écran de veille spécifique (équivaut à sélectionner "Aucun")
+Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "SCRNSAVE.EXE" -Value "" -Type String -Force
+
+Write-Host "Configuration appliquée : Écran de veille désactivé (Aucun)."
 
 
 #-----------------------------------------
 #
-#  
+#  !!! PARTIE DE TEST !!!
 #
 #-----------------------------------------
 
+# Script PowerShell pour désactiver plusieurs paramètres du menu Démarrer via le Registre
+# Aucune vérification n'est effectuée avant d'appliquer les modifications.
 
+Write-Host "Tentative de désactivation des paramètres du menu Démarrer via le Registre..." -ForegroundColor Yellow
+
+# Chemin principal pour la plupart des paramètres
+$pathExplorerAdvanced = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+$pathContentDelivery = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+$pathUserProfileEngagement = "HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement"
+
+# Désactiver "Afficher les applications récemment ajoutées"
+try {
+    Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_ShowRecentlyAddedApps" -Value 0 -Type DWord -Force -ErrorAction Stop
+    Write-Host "[OK] Start_ShowRecentlyAddedApps désactivé."
+} catch {
+    Write-Warning "[ERREUR] Impossible de modifier Start_ShowRecentlyAddedApps : $($_.Exception.Message)"
+}
+
+# Désactiver "Afficher les applications les plus utilisées"
+try {
+    Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_TrackProgs" -Value 0 -Type DWord -Force -ErrorAction Stop
+    Write-Host "[OK] Start_TrackProgs désactivé."
+} catch {
+    Write-Warning "[ERREUR] Impossible de modifier Start_TrackProgs : $($_.Exception.Message)"
+}
+
+# Désactiver "Afficher les fichiers recommandés..." (partie affichage Démarrer)
+try {
+    Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_RecommendationsEnabled" -Value 0 -Type DWord -Force -ErrorAction Stop
+    Write-Host "[OK] Start_RecommendationsEnabled désactivé."
+} catch {
+    Write-Warning "[ERREUR] Impossible de modifier Start_RecommendationsEnabled : $($_.Exception.Message)"
+}
+
+# Désactiver aussi le suivi général des documents/programmes (impacte récents/recommandés)
+try {
+    Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_TrackDocs" -Value 0 -Type DWord -Force -ErrorAction Stop
+     Write-Host "[OK] Start_TrackDocs désactivé."
+} catch {
+     Write-Warning "[ERREUR] Impossible de modifier Start_TrackDocs : $($_.Exception.Message)"
+}
+
+# Désactiver "Afficher des recommandations pour les conseils, etc."
+try {
+    Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_SuggestionsEnabled" -Value 0 -Type DWord -Force -ErrorAction Stop
+    Write-Host "[OK] Start_SuggestionsEnabled désactivé."
+} catch {
+    Write-Warning "[ERREUR] Impossible de modifier Start_SuggestionsEnabled : $($_.Exception.Message)"
+}
+
+# Désactiver une clé liée aux suggestions/contenu (ContentDeliveryManager)
+# On vérifie si le chemin parent existe pour éviter une erreur si la clé n'est pas présente
+if (Test-Path $pathContentDelivery) {
+    try {
+        Set-ItemProperty -Path $pathContentDelivery -Name "SubscribedContent-310093Enabled" -Value 0 -Type DWord -Force -ErrorAction Stop
+        Write-Host "[OK] SubscribedContent-310093Enabled (ContentDelivery) désactivé."
+    } catch {
+        Write-Warning "[ERREUR] Impossible de modifier SubscribedContent-310093Enabled : $($_.Exception.Message)"
+    }
+} else {
+    Write-Host "[INFO] Chemin $pathContentDelivery inexistant, clé SubscribedContent ignorée."
+}
+
+# Tentative de désactivation des notifications/suggestions liées au compte (clé moins certaine)
+if (Test-Path $pathUserProfileEngagement) {
+    try {
+        Set-ItemProperty -Path $pathUserProfileEngagement -Name "ScoobeSystemSettingEnabled" -Value 0 -Type DWord -Force -ErrorAction Stop
+        Write-Host "[OK] ScoobeSystemSettingEnabled (UserProfileEngagement) désactivé."
+    } catch {
+        Write-Warning "[ERREUR] Impossible de modifier ScoobeSystemSettingEnabled : $($_.Exception.Message)"
+    }
+} else {
+     Write-Host "[INFO] Chemin $pathUserProfileEngagement inexistant, clé ScoobeSystemSettingEnabled ignorée."
+}
+
+
+Write-Host "Opération terminée." -ForegroundColor Green
+Write-Host "Pour que tous les changements prennent effet, vous devrez peut-être redémarrer l'Explorateur Windows ou votre ordinateur."
+
+# Pour redémarrer l'Explorateur Windows automatiquement (décommenter la ligne ci-dessous) :
+# Write-Host "Redémarrage de l'Explorateur Windows..." ; Stop-Process -Name explorer -Force; Start-Process explorer
 
 
 #-----------------------------------------

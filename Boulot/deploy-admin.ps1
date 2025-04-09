@@ -212,33 +212,6 @@ Enable-ComputerRestore -Drive "C:\"
 #Write-Output "Les modifications ont été appliquées. L'ordinateur va redémarrer."
 
 
-#--------------------------
-#
-#  Installation des programmes via Winget
-#
-#---------------------------
-
-# Vérifie si winget est disponible
-if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
-    Write-Host "Winget n'est pas installé. Installation en cours..." -ForegroundColor Yellow
-
-    $progressPreference = 'silentlyContinue'
-    Write-Host "Installation du module WinGet PowerShell depuis PSGallery..."
-    Install-PackageProvider -Name NuGet -Force | Out-Null
-    Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery | Out-Null
-
-    Write-Host "Utilisation de Repair-WinGetPackageManager pour bootstrapper WinGet..."
-    Repair-WinGetPackageManager
-
-    Write-Host "Winget a été installé avec succès." -ForegroundColor Green
-}
-else {
-    Write-Host "Winget est déjà installé." -ForegroundColor Green
-}
-
-# Installation des logiciels 
-winget install --accept-package-agreements --accept-source-agreements google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice Google.GoogleDrive Adobe.Acrobat.Reader.64-bit
-
 
 #-----------------------------
 #
@@ -381,6 +354,33 @@ Write-Host "Pour que tous les changements prennent effet, vous devrez peut-être
 # Pour redémarrer l'Explorateur Windows automatiquement (décommenter la ligne ci-dessous) :
 # Write-Host "Redémarrage de l'Explorateur Windows..." ; Stop-Process -Name explorer -Force; Start-Process explorer
 
+#--------------------------
+#
+#  Installation des programmes via Winget
+#
+#---------------------------
+
+# Vérifie si winget est disponible
+if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
+    Write-Host "Winget n'est pas installé. Installation en cours..." -ForegroundColor Yellow
+
+    $progressPreference = 'silentlyContinue'
+    Write-Host "Installation du module WinGet PowerShell depuis PSGallery..."
+    Install-PackageProvider -Name NuGet -Force | Out-Null
+    Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery | Out-Null
+
+    Write-Host "Utilisation de Repair-WinGetPackageManager pour bootstrapper WinGet..."
+    Repair-WinGetPackageManager
+
+    Write-Host "Winget a été installé avec succès." -ForegroundColor Green
+}
+else {
+    Write-Host "Winget est déjà installé." -ForegroundColor Green
+}
+
+# Installation des logiciels 
+winget install --accept-package-agreements --accept-source-agreements google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice Google.GoogleDrive Adobe.Acrobat.Reader.64-bit
+
 
 #--------------------------------------
 #
@@ -396,10 +396,42 @@ Get-ChildItem -Path C:\ -Directory | ForEach-Object {
 
 #-----------------------------------------
 #
-#  
+#  Désactiver les messages du centre Sécurité et maintenance
 #
 #-----------------------------------------
 
+$paths = @(
+    "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\ActionCenter\Notifications"
+    "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ActionCenter\Checks"
+)
+
+$valuesToDisable = @(
+    "Uac",
+    "WindowsUpdate",
+    "SpywareProtection",
+    "InternetSecurity",
+    "Firewall",
+    "AutoUpdate",
+    "WindowsBackup",
+    "DriveStatus",
+    "SmartScreen",
+    "AccountProtection",
+    "SecurityCenter",
+    "Maintenance",
+    "Troubleshooting",
+    "HomeGroup",
+    "StorageSpaces",
+    "FileHistory"
+)
+
+foreach ($path in $paths) {
+    foreach ($name in $valuesToDisable) {
+        if (!(Test-Path $path)) {
+            New-Item -Path $path -Force | Out-Null
+        }
+        New-ItemProperty -Path $path -Name $name -Value 0 -PropertyType DWord -Force | Out-Null
+    }
+}
 
 
 

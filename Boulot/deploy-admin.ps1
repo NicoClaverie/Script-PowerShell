@@ -46,6 +46,9 @@ Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentD
 # 6. Désactiver les notifications liées au compte
 Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement" -Name "ScoobeSystemSettingEnabled" -Value 0
 
+# Afficher toutes les icônes dans la barre d'état système
+Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer" -Name EnableAutoTray -Value 0
+
 Write-Host "Configuration du menu Démarrer mise à jour !" -ForegroundColor Cyan
 
 
@@ -59,7 +62,58 @@ Write-Host "Configuration du menu Démarrer mise à jour !" -ForegroundColor Cya
 #
 #-----------------------------
 
-net use P: \\nasqnap\share /user:ADMIN@dom_maine /p:yes
+# --- Script pour mapper P: vers \\nasqnap\share en demandant les identifiants ---
+
+$driveLetter = "P"
+$networkPath = "\\nasqnap\share"
+
+Write-Host "Vérification de l'existence du lecteur $driveLetter`:"
+
+# Vérifier si le lecteur P: n'existe PAS déjà
+if (-not (Test-Path -Path "${driveLetter}:")) {
+    Write-Host "Le lecteur $driveLetter`: n'existe pas."
+    Write-Host "Une fenêtre va s'ouvrir pour demander les identifiants nécessaires pour accéder à $networkPath" -ForegroundColor Yellow
+
+    # Initialiser la variable credential
+    $credential = $null
+    try {
+        # Demander les identifiants (nom d'utilisateur et mot de passe) à l'utilisateur
+        # Le nom d'utilisateur doit souvent être au format DOMAINE\utilisateur ou utilisateur@domaine.com
+        $credential = Get-Credential -Message "Entrez les identifiants pour $networkPath"
+    }
+    catch {
+        Write-Warning "Impossible d'obtenir les identifiants. Erreur: $($_.Exception.Message)"
+    }
+
+
+    # Vérifier si l'utilisateur a fourni des identifiants (n'a pas cliqué sur Annuler)
+    if ($credential -ne $null) {
+        Write-Host "Tentative de mappage du lecteur $driveLetter`: vers $networkPath avec les identifiants fournis..."
+        try {
+            # Créer le lecteur réseau avec les identifiants et le rendre persistant
+            # L'option -Persist tente de rendre le mappage permanent,
+            # mais Windows pourrait redemander les identifiants lors de la prochaine connexion.
+            New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root $networkPath -Persist -Credential $credential -ErrorAction Stop
+            Write-Host "Succès : Lecteur $driveLetter`: mappé vers $networkPath et configuré comme persistant (pour la session actuelle et tentative de persistance)." -ForegroundColor Green
+        }
+        catch {
+            # Afficher un message en cas d'erreur lors du mappage
+            Write-Error "Échec du mappage du lecteur $driveLetter`: vers $networkPath. Vérifiez les identifiants fournis, l'accès au chemin réseau et les permissions. Erreur : $($_.Exception.Message)"
+        }
+    }
+    else {
+        Write-Warning "Aucun identifiant fourni ou opération annulée par l'utilisateur. Aucun mappage effectué."
+    }
+}
+else {
+    # Afficher un message si le lecteur P: existe déjà
+    Write-Warning "Le lecteur $driveLetter`: existe déjà. Aucun nouveau mappage effectué."
+}
+
+# --- Fin du script ---
+
+
+# net use P: \\nasqnap\share /user:ADMIN@dom_maine /p:yes
 
 #------------------------------
 #
@@ -67,7 +121,7 @@ net use P: \\nasqnap\share /user:ADMIN@dom_maine /p:yes
 #
 #------------------------------
 
-Robocopy "\\nasqnap\share\Informatique\MASTER\WIN11\Sur C" C:\
+Robocopy "P:\Informatique\MASTER\WIN11\Sur C" C:\
 
 #------------------------------------
 #
@@ -194,78 +248,8 @@ winget install --accept-package-agreements --accept-source-agreements google.chr
 
 Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
 
-#-----------------------------
-#
-#  Ajout du NAS
-#
-#-----------------------------
-
-# --- Script pour mapper P: vers \\nasqnap\share en demandant les identifiants ---
-
-$driveLetter = "P"
-$networkPath = "\\nasqnap\share"
-
-Write-Host "Vérification de l'existence du lecteur $driveLetter`:"
-
-# Vérifier si le lecteur P: n'existe PAS déjà
-if (-not (Test-Path -Path "${driveLetter}:")) {
-    Write-Host "Le lecteur $driveLetter`: n'existe pas."
-    Write-Host "Une fenêtre va s'ouvrir pour demander les identifiants nécessaires pour accéder à $networkPath" -ForegroundColor Yellow
-
-    # Initialiser la variable credential
-    $credential = $null
-    try {
-        # Demander les identifiants (nom d'utilisateur et mot de passe) à l'utilisateur
-        # Le nom d'utilisateur doit souvent être au format DOMAINE\utilisateur ou utilisateur@domaine.com
-        $credential = Get-Credential -Message "Entrez les identifiants pour $networkPath"
-    } catch {
-        Write-Warning "Impossible d'obtenir les identifiants. Erreur: $($_.Exception.Message)"
-    }
 
 
-    # Vérifier si l'utilisateur a fourni des identifiants (n'a pas cliqué sur Annuler)
-    if ($credential -ne $null) {
-        Write-Host "Tentative de mappage du lecteur $driveLetter`: vers $networkPath avec les identifiants fournis..."
-        try {
-            # Créer le lecteur réseau avec les identifiants et le rendre persistant
-            # L'option -Persist tente de rendre le mappage permanent,
-            # mais Windows pourrait redemander les identifiants lors de la prochaine connexion.
-            New-PSDrive -Name $driveLetter -PSProvider FileSystem -Root $networkPath -Persist -Credential $credential -ErrorAction Stop
-            Write-Host "Succès : Lecteur $driveLetter`: mappé vers $networkPath et configuré comme persistant (pour la session actuelle et tentative de persistance)." -ForegroundColor Green
-        } catch {
-            # Afficher un message en cas d'erreur lors du mappage
-            Write-Error "Échec du mappage du lecteur $driveLetter`: vers $networkPath. Vérifiez les identifiants fournis, l'accès au chemin réseau et les permissions. Erreur : $($_.Exception.Message)"
-        }
-    } else {
-        Write-Warning "Aucun identifiant fourni ou opération annulée par l'utilisateur. Aucun mappage effectué."
-    }
-} else {
-    # Afficher un message si le lecteur P: existe déjà
-    Write-Warning "Le lecteur $driveLetter`: existe déjà. Aucun nouveau mappage effectué."
-}
-
-# --- Fin du script ---
-
-
-# net use P: \\nasqnap\share /user:ADMIN@dom_maine /p:yes
-
-#------------------------------
-#
-#  Copie des dossiers Logos, Imprimantes et Maintenances sur le disque C:\
-#
-#------------------------------
-
-Robocopy "\\nasqnap\share\Informatique\MASTER\WIN11\Sur C" C:\
-
-#--------------------------------------
-#
-#   Passe tout les dossiers sur la racine C: en masqué
-#
-#--------------------------------------
-
-Get-ChildItem -Path C:\ -Directory | ForEach-Object {
-    Set-ItemProperty -Path $_.FullName -Name Attributes -Value Hidden
-}
 
 #------------------------------------
 #
@@ -320,7 +304,8 @@ $pathUserProfileEngagement = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Us
 try {
     Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_ShowRecentlyAddedApps" -Value 0 -Type DWord -Force -ErrorAction Stop
     Write-Host "[OK] Start_ShowRecentlyAddedApps désactivé."
-} catch {
+}
+catch {
     Write-Warning "[ERREUR] Impossible de modifier Start_ShowRecentlyAddedApps : $($_.Exception.Message)"
 }
 
@@ -328,7 +313,8 @@ try {
 try {
     Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_TrackProgs" -Value 0 -Type DWord -Force -ErrorAction Stop
     Write-Host "[OK] Start_TrackProgs désactivé."
-} catch {
+}
+catch {
     Write-Warning "[ERREUR] Impossible de modifier Start_TrackProgs : $($_.Exception.Message)"
 }
 
@@ -336,7 +322,8 @@ try {
 try {
     Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_RecommendationsEnabled" -Value 0 -Type DWord -Force -ErrorAction Stop
     Write-Host "[OK] Start_RecommendationsEnabled désactivé."
-} catch {
+}
+catch {
     Write-Warning "[ERREUR] Impossible de modifier Start_RecommendationsEnabled : $($_.Exception.Message)"
 }
 
@@ -344,7 +331,8 @@ try {
 try {
     Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_TrackDocs" -Value 0 -Type DWord -Force -ErrorAction Stop
     Write-Host "[OK] Start_TrackDocs désactivé."
-} catch {
+}
+catch {
     Write-Warning "[ERREUR] Impossible de modifier Start_TrackDocs : $($_.Exception.Message)"
 }
 
@@ -352,7 +340,8 @@ try {
 try {
     Set-ItemProperty -Path $pathExplorerAdvanced -Name "Start_SuggestionsEnabled" -Value 0 -Type DWord -Force -ErrorAction Stop
     Write-Host "[OK] Start_SuggestionsEnabled désactivé."
-} catch {
+}
+catch {
     Write-Warning "[ERREUR] Impossible de modifier Start_SuggestionsEnabled : $($_.Exception.Message)"
 }
 
@@ -362,10 +351,12 @@ if (Test-Path $pathContentDelivery) {
     try {
         Set-ItemProperty -Path $pathContentDelivery -Name "SubscribedContent-310093Enabled" -Value 0 -Type DWord -Force -ErrorAction Stop
         Write-Host "[OK] SubscribedContent-310093Enabled (ContentDelivery) désactivé."
-    } catch {
+    }
+    catch {
         Write-Warning "[ERREUR] Impossible de modifier SubscribedContent-310093Enabled : $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Write-Host "[INFO] Chemin $pathContentDelivery inexistant, clé SubscribedContent ignorée."
 }
 
@@ -374,10 +365,12 @@ if (Test-Path $pathUserProfileEngagement) {
     try {
         Set-ItemProperty -Path $pathUserProfileEngagement -Name "ScoobeSystemSettingEnabled" -Value 0 -Type DWord -Force -ErrorAction Stop
         Write-Host "[OK] ScoobeSystemSettingEnabled (UserProfileEngagement) désactivé."
-    } catch {
+    }
+    catch {
         Write-Warning "[ERREUR] Impossible de modifier ScoobeSystemSettingEnabled : $($_.Exception.Message)"
     }
-} else {
+}
+else {
     Write-Host "[INFO] Chemin $pathUserProfileEngagement inexistant, clé ScoobeSystemSettingEnabled ignorée."
 }
 
@@ -387,6 +380,18 @@ Write-Host "Pour que tous les changements prennent effet, vous devrez peut-être
 
 # Pour redémarrer l'Explorateur Windows automatiquement (décommenter la ligne ci-dessous) :
 # Write-Host "Redémarrage de l'Explorateur Windows..." ; Stop-Process -Name explorer -Force; Start-Process explorer
+
+
+#--------------------------------------
+#
+#   Passe tout les dossiers sur la racine C: en masqué
+#
+#--------------------------------------
+
+Get-ChildItem -Path C:\ -Directory | ForEach-Object {
+    Set-ItemProperty -Path $_.FullName -Name Attributes -Value Hidden
+}
+
 
 
 #-----------------------------------------

@@ -14,7 +14,6 @@ Ce script PowerShell permet de :
 
 .NOTES
 Date de création : 2025-04-11
-Emplacement d'exécution prévu : Clairac, Nouvelle-Aquitaine, France (ou tout poste Windows avec PowerShell)
 Prérequis :
     - PowerShell 5.1 ou supérieur.
     - Le pare-feu sur les machines CIBLES doit autoriser les requêtes Ping entrantes (ICMPv4 Echo Request).

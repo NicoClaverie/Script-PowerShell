@@ -378,6 +378,9 @@ else {
     Write-Host "Winget est déjà installé." -ForegroundColor Green
 }
 
+# Mise a jour des sources Winget
+winget source update
+
 # Installation des logiciels 
 winget install --accept-package-agreements --accept-source-agreements google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice Google.GoogleDrive Adobe.Acrobat.Reader.64-bit
 

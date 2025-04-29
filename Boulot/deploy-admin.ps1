@@ -121,7 +121,10 @@ else {
 #
 #------------------------------
 
-Robocopy "\\nasqnap\share\Informatique\MASTER\WIN11\Sur C" C:\
+Robocopy "D:\WIN11\Sur C\" C:\ /E
+
+
+Robocopy D:\desktop\ C:\Users\QPADMINPC\Desktop\ /E
 
 #------------------------------------
 #
@@ -192,14 +195,14 @@ Enable-ComputerRestore -Drive "C:\"
 
 # Demander le nouveau nom de l'ordinateur
 #Write-host "Pensez a ajouter X au nom de l'ordinateur" -ForegroundColor Red
-#$newComputerName = Read-Host "Entrez le nouveau nom de l'ordinateur"
+$newComputerName = Read-Host "Entrez le nouveau nom de l'ordinateur"
 
 # Demander la nouvelle description de l'ordinateur
 #$newDescription = Read-Host "Entrez la description de l'ordinateur"
 
 # Changer le nom de l'ordinateur
-#Write-Output "Changement du nom de l'ordinateur en '$newComputerName' "
-#Rename-Computer -NewName $newComputerName -Force
+Write-Output "Changement du nom de l'ordinateur en '$newComputerName' "
+Rename-Computer -NewName $newComputerName -Force
 
 # Changer la description de l'ordinateur dans le registre
 #Write-Output "Modification de la description en '$newDescription' "
@@ -440,19 +443,22 @@ foreach ($path in $paths) {
 
 #-----------------------------------------
 #
-#  
+#  appliquer les options Win11
 #
 #-----------------------------------------
 
-
-
+reg.exe add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f
+taskkill /F /IM explorer.exe & start explorer
 
 #-----------------------------------------
 #
-#  
+#  ajout du wifi GEA
 #
 #-----------------------------------------
 
+netsh wlan add profile filename="D:\WIN11\Wi-Fi-GEA.xml" user=all
+netsh wlan connect name="GEA"
+netsh wlan show profiles
 
 
 

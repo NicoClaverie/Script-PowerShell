@@ -121,7 +121,7 @@ else {
 #
 #------------------------------
 
-Robocopy "P:\Informatique\MASTER\WIN11\Sur C" C:\
+Robocopy "\\nasqnap\share\Informatique\MASTER\WIN11\Sur C" C:\
 
 #------------------------------------
 #

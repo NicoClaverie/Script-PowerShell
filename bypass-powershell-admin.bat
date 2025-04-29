@@ -1,8 +1,8 @@
 @echo off
-:: Vérifie si on est en admin
+:: Verifie si on est en admin
 net session >nul 2>&1
 if %errorLevel% neq 0 (
-    echo Élévation requise. Relancement en administrateur...
+    echo Elevation requise. Relancement en administrateur...
     powershell -Command "Start-Process '%~f0' -Verb runAs"
     exit /b
 )

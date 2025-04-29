@@ -121,7 +121,7 @@ else {
 #
 #------------------------------
 
-Robocopy "D:\WIN11\Sur C\" C:\ /E
+Robocopy D:\WIN11\SurC\ C:\ /E
 
 
 Robocopy D:\desktop\ C:\Users\QPADMINPC\Desktop\ /E
@@ -448,7 +448,8 @@ foreach ($path in $paths) {
 #-----------------------------------------
 
 reg.exe add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /f
-taskkill /F /IM explorer.exe & start explorer
+taskkill /F /IM explorer.exe
+start explorer
 
 #-----------------------------------------
 #

@@ -1,73 +1,82 @@
-#Requires -RunAsAdministrator
+# --- ATTENTION : Ceci est un exemple conceptuel simplifié ---
+# --- À utiliser avec prudence et après adaptation ---
 
-<#
-.SYNOPSIS
-Change l'image du compte d'un utilisateur local Windows.
-.DESCRIPTION
-Ce script modifie les entrées de registre nécessaires pour changer l'avatar
-d'un compte utilisateur local spécifié. Nécessite des droits administrateur.
-.PARAMETER UserName
-Le nom d'utilisateur du compte local dont l'avatar doit être changé.
-Par défaut, tente de changer l'avatar de l'utilisateur courant si lancé depuis sa session
-(mais nécessite quand même l'élévation de privilèges).
-.PARAMETER ImagePath
-Le chemin complet vers le fichier image (.jpg, .png, .bmp) à utiliser comme nouvel avatar.
-.EXAMPLE
-.\Set-UserTile.ps1 -UserName "MonUser" -ImagePath "C:\Images\avatar.png"
-.EXAMPLE
-# Change l'avatar de l'utilisateur actuel (nécessite élévation admin)
-.\Set-UserTile.ps1 -ImagePath "C:\Users\Public\Pictures\nouvel_avatar.jpg"
-.NOTES
-ATTENTION : Ce script modifie le Registre. À utiliser avec précaution.
-La modification peut ne pas être visible immédiatement et nécessiter une déconnexion/reconnexion.
-Fonctionne principalement pour les comptes locaux. Pour les comptes de domaine,
-la gestion peut être différente (via AD par exemple).
-#>
-param(
-    [Parameter(Mandatory=$false)]
-    [string]$UserName = $env:USERNAME, # Prend l'utilisateur actuel par défaut
+# Charger l'assembly System.Drawing (peut ne pas être nécessaire sur certaines versions)
+Add-Type -AssemblyName System.Drawing
 
-    [Parameter(Mandatory=$true)]
-    [ValidateScript({ Test-Path $_ -PathType Leaf })] # Vérifie que le fichier image existe
-    [string]$ImagePath
-)
+# Chemin de l'image source et dossier de destination
+$SourceImagePath = "C:\chemin\vers\mon_avatar_source.png"
+$DestinationFolder = "C:\AvatarsPréparés\"
+$BaseName = [System.IO.Path]::GetFileNameWithoutExtension($SourceImagePath)
 
-Write-Host "Tentative de changement d'avatar pour l'utilisateur '$UserName' avec l'image '$ImagePath'."
+# Tailles requises (exemple)
+$RequiredSizes = @(448, 240, 96, 48, 40, 32)
 
-try {
-    # 1. Trouver le SID de l'utilisateur
-    $UserAccount = New-Object System.Security.Principal.NTAccount($UserName)
-    $UserSid = $UserAccount.Translate([System.Security.Principal.SecurityIdentifier]).Value
-    Write-Host "SID trouvé pour '$UserName': $UserSid"
+# Charger l'image source
+$SourceImage = [System.Drawing.Image]::FromFile($SourceImagePath)
 
-    # 2. Définir le chemin de base dans le Registre
-    $RegPathBase = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users"
-    $UserRegPath = Join-Path -Path $RegPathBase -ChildPath $UserSid
+# Boucler sur chaque taille requise
+foreach ($Size in $RequiredSizes) {
+    $DestinationPath = Join-Path -Path $DestinationFolder -ChildPath "$($BaseName)_$($Size).png"
 
-    # 3. S'assurer que la clé de registre pour l'utilisateur existe
-    if (-not (Test-Path $UserRegPath)) {
-        Write-Host "Création de la clé de Registre : $UserRegPath"
-        New-Item -Path $UserRegPath -Force | Out-Null
-    } else {
-        Write-Host "Clé de Registre existante trouvée : $UserRegPath"
-    }
+    # Créer une nouvelle image (bitmap) à la taille cible
+    $TargetBitmap = New-Object System.Drawing.Bitmap($Size, $Size)
+    $TargetGraphics = [System.Drawing.Graphics]::FromImage($TargetBitmap)
 
-    # 4. Définir les valeurs de registre pour différentes tailles d'image
-    # Windows utilise ces tailles, mais elles peuvent toutes pointer vers le même fichier source.
-    # Windows se chargera de redimensionner l'image source au besoin.
-    $ImageSizes = @("Image40", "Image48", "Image96", "Image192", "Image200", "Image240", "Image448") # Liste commune de tailles
+    # Configurer la qualité du redimensionnement (optionnel mais recommandé)
+    $TargetGraphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+    $TargetGraphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+    $TargetGraphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+    $TargetGraphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
 
-    foreach ($SizeName in $ImageSizes) {
-        $RegValuePath = Join-Path -Path $UserRegPath -ChildPath $SizeName
-        Write-Host "Définition de la valeur '$SizeName' sur '$ImagePath' dans '$UserRegPath'"
-        # Utilise Set-ItemProperty avec -Force pour créer ou écraser la valeur
-        Set-ItemProperty -Path $UserRegPath -Name $SizeName -Value $ImagePath -Type String -Force
-    }
+    # Dessiner l'image source redimensionnée sur la nouvelle image
+    # Rectangle de destination (0, 0, $Size, $Size)
+    # Rectangle source (0, 0, $SourceImage.Width, $SourceImage.Height)
+    $TargetGraphics.DrawImage($SourceImage, (New-Object System.Drawing.Rectangle(0, 0, $Size, $Size)), (New-Object System.Drawing.Rectangle(0, 0, $SourceImage.Width, $SourceImage.Height)), [System.Drawing.GraphicsUnit]::Pixel)
 
-    Write-Host "Modification des clés de Registre terminée pour l'utilisateur '$UserName'."
-    Write-Host "Il peut être nécessaire de se déconnecter et se reconnecter pour voir le changement."
+    # Sauvegarder la nouvelle image (format PNG ici)
+    $TargetBitmap.Save($DestinationPath, [System.Drawing.Imaging.ImageFormat]::Png)
 
-} catch {
-    Write-Error "Une erreur est survenue : $($_.Exception.Message)"
-    Write-Error "Le script n'a peut-être pas pu changer l'avatar."
+    # Libérer les ressources
+    $TargetGraphics.Dispose()
+    $TargetBitmap.Dispose()
 }
+
+# Libérer l'image source
+$SourceImage.Dispose()
+
+Write-Host "Images redimensionnées créées dans $DestinationFolder"
+
+#######################################################################
+
+# 1. Obtenir le SID (exemple pour un compte local)
+$UserSID = ([System.Security.Principal.WindowsIdentity]::GetCurrent()).User.Value
+
+# 2. Définir les chemins où vous avez sauvegardé les images redimensionnées
+# (Suppose que les images sont dans C:\AvatarsPréparés\ et nommées avec le SID)
+$ImagePathBase = "C:\AvatarsPréparés\$($UserSID)" # Exemple de chemin
+$Image448Path = "$($ImagePathBase)_448.png" # Chemin vers l'image 448x448
+$Image240Path = "$($ImagePathBase)_240.png" # Chemin vers l'image 240x240
+# ... etc. pour toutes les tailles requises
+
+# 3. Chemin de la clé de Registre
+$RegPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\AccountPicture\Users\$UserSID"
+
+# Vérifier si la clé existe, sinon la créer (peut nécessiter plus de logique)
+if (-not (Test-Path $RegPath)) {
+    New-Item -Path $RegPath -Force | Out-Null
+}
+
+# 4. Écrire les chemins dans le Registre (EXIGE PowerShell lancé en tant qu'Administrateur)
+try {
+    Set-ItemProperty -Path $RegPath -Name "Image448" -Value $Image448Path -Type String -Force -ErrorAction Stop
+    Set-ItemProperty -Path $RegPath -Name "Image240" -Value $Image240Path -Type String -Force -ErrorAction Stop
+    # ... Répéter Set-ItemProperty pour TOUTES les autres tailles (Image96, Image48, etc.)
+
+    Write-Host "Les propriétés du Registre pour l'avatar de $UserName (SID: $UserSID) ont été mises à jour."
+    Write-Host "Un redémarrage ou une déconnexion/reconnexion de l'utilisateur peut être nécessaire pour voir le changement."
+} catch {
+    Write-Error "Erreur lors de la mise à jour du Registre : $($_.Exception.Message)"
+}
+
+# --- Fin de l'exemple conceptuel ---

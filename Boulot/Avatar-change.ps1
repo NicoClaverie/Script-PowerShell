@@ -5,8 +5,8 @@
 Add-Type -AssemblyName System.Drawing
 
 # Chemin de l'image source et dossier de destination
-$SourceImagePath = "C:\chemin\vers\mon_avatar_source.png"
-$DestinationFolder = "C:\AvatarsPréparés\"
+$SourceImagePath = "C:\Logos\TDS User Windows.jpg"
+$DestinationFolder = "$Env:USERPROFILE\AppData\Roaming\Microsoft\Windows\AccountPictures"
 $BaseName = [System.IO.Path]::GetFileNameWithoutExtension($SourceImagePath)
 
 # Tailles requises (exemple)

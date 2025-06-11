@@ -1,6 +1,6 @@
-Write-Host "Lancement de la surveillance du signal Wi-Fi..."
+Write-Host "Lancement de la surveillance du signal Wi-Fi"
 Write-Host "Appuyez sur Ctrl+C pour arrêter le script."
-Write-Host "--------------------------------------------------"
+Write-Host "--------------------------------------------"
 
 while ($true) {
     # Récupère la ligne contenant la force du signal
@@ -11,11 +11,12 @@ while ($true) {
         $signalStrength = $signalLine -replace "^\s+Signal\s+:\s+", ""
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         Write-Host "$timestamp --- Force du signal : $($signalStrength.Trim())"
-    } else {
+    }
+    else {
         $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
         Write-Host "$timestamp --- Wi-Fi non connecté ou interface introuvable."
     }
     
     # Pause de 2 secondes avant la prochaine mesure
-    Start-Sleep -Seconds 1
+    Start-Sleep -Seconds 2
 }

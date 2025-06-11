@@ -6,7 +6,7 @@
 
 
 
-$exportPath = "d:\$env:USERNAME\wifi" # Chemin de destination pour les fichiers XML !!! A modifier au besoin !!!
+$exportPath = "c:\$env:USERNAME\wifi" # Chemin de destination pour les fichiers XML !!! A modifier au besoin !!!
 if (!(Test-Path -Path $exportPath)) {
     New-Item -ItemType Directory -Path $exportPath
 }

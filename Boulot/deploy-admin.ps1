@@ -117,12 +117,74 @@ else {
 
 #-----------------------------------------
 #
-#  Renommer le dossier Defautl dans C:\Users 
-#
+#  Renommer le dossier Default dans C:\Users puis décompresser default.tar.gz a la place
+#  Generer avec Gemini
+#  
 #-----------------------------------------
+# Ren C:\Users\Default C:\Users\Default.old
 
+# S'assurer que le script s'arrête en cas d'erreur
+$ErrorActionPreference = "Stop"
 
-Ren C:\Users\Default C:\Users\Default.old
+# --- Début du Script ---
+Write-Host "Démarrage du script de remplacement du profil utilisateur par défaut." -ForegroundColor Green
+
+# Définir les chemins des dossiers
+$defaultProfilePath = "C:\Users\Default"
+$oldProfilePath = "C:\Users\Default.old"
+
+# --- 1. Renommage de l'ancien profil ---
+Write-Host "Vérification du profil par défaut existant..."
+if (Test-Path $defaultProfilePath) {
+    # Si un "Default.old" existe déjà, on le supprime pour éviter une erreur
+    if (Test-Path $oldProfilePath) {
+        Write-Host "Suppression d'un ancien dossier 'Default.old'..."
+        Remove-Item -Path $oldProfilePath -Recurse -Force
+    }
+    
+    # On renomme le dossier Default actuel
+    Write-Host "Renommage de '$defaultProfilePath' en '$oldProfilePath'..."
+    Rename-Item -Path $defaultProfilePath -NewName "Default.old"
+    Write-Host "OK. Ancien profil archivé." -ForegroundColor Green
+} else {
+    Write-Host "Le dossier '$defaultProfilePath' n'existe pas, rien à renommer."
+}
+
+# --- 2. Recherche de l'archive sur les clés USB ---
+Write-Host "Recherche de 'default.tar.gz' sur les clés USB..."
+$sourceArchive = $null
+$removableDrives = Get-WmiObject Win32_LogicalDisk | Where-Object { $_.DriveType -eq 2 }
+
+foreach ($drive in $removableDrives) {
+    $potentialPath = Join-Path -Path $drive.DeviceID -ChildPath "default.tar.gz"
+    if (Test-Path $potentialPath) {
+        $sourceArchive = $potentialPath
+        Write-Host "Archive trouvée sur le lecteur $($drive.DeviceID) !" -ForegroundColor Green
+        break
+    }
+}
+
+# Si aucune archive n'est trouvée, on arrête le script avec une erreur
+if ($null -eq $sourceArchive) {
+    Write-Error "ERREUR : Impossible de trouver le fichier 'default.tar.gz' à la racine d'une clé USB."
+    exit 1
+}
+
+# --- 3. Décompression de la nouvelle archive ---
+$destinationPath = "C:\Users\"
+Write-Host "Décompression de '$sourceArchive' vers '$destinationPath'..."
+
+try {
+    # On utilise l'outil tar.exe intégré à Windows
+    tar.exe -xzf $sourceArchive -C $destinationPath
+    Write-Host "Décompression terminée avec succès !" -ForegroundColor Green
+} catch {
+    Write-Error "ERREUR lors de la décompression de l'archive. Assurez-vous que l'archive n'est pas corrompue."
+    Write-Error $_.Exception.Message
+    exit 1
+}
+
+Write-Host "Script terminé avec succès." -ForegroundColor Magenta
 
 
 #------------------------------

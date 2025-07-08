@@ -193,10 +193,14 @@ Write-Host "Script terminé avec succès." -ForegroundColor Magenta
 #
 #------------------------------
 
-Robocopy D:\WIN11\SurC\ C:\ /E
-
-
-Robocopy D:\desktop\ C:\Users\QPADMINPC\Desktop\ /E
+# Cherche le dossier 'win11\surC' sur tous les lecteurs prêts et lance Robocopy dès qu'il est trouvé.
+Get-CimInstance -ClassName Win32_LogicalDisk | ForEach-Object {
+    $sourcePath = Join-Path -Path $_.DeviceID -ChildPath 'win11\surC'
+    if (Test-Path -Path $sourcePath) {
+        robocopy $sourcePath "C:\" /E /R:1 /W:1 /NP /LOG+:"C:\Windows\Temp\robocopy.log"
+        break # Stoppe le script et la recherche une fois la copie lancée
+    }
+}
 
 #------------------------------------
 #
@@ -435,29 +439,64 @@ Write-Host "Pour que tous les changements prennent effet, vous devrez peut-être
 #
 #---------------------------
 
-# Vérifie si winget est disponible
-if (-not (Get-Command "winget.exe" -ErrorAction SilentlyContinue)) {
-    Write-Host "Winget n'est pas installé. Installation en cours..." -ForegroundColor Yellow
+# Script pour installer les applications via winget.
+# À placer dans les "FirstLogon scripts", après le script de profil.
 
-    $progressPreference = 'silentlyContinue'
-    Write-Host "Installation du module WinGet PowerShell depuis PSGallery..."
-    Install-PackageProvider -Name NuGet -Force | Out-Null
-    Install-Module -Name Microsoft.WinGet.Client -Force -Repository PSGallery | Out-Null
+# --- 1. Configuration du journal ---
+$logFile = "$env:USERPROFILE\Desktop\Winget-Install-Log.txt"
+function Write-Log { param($message) ; Add-Content -Path $logFile -Value "($(Get-Date -Format G)) - $message" }
+Write-Log "--- Début du script d'installation des applications ---"
 
-    Write-Host "Utilisation de Repair-WinGetPackageManager pour bootstrapper WinGet..."
-    Repair-WinGetPackageManager
-
-    Write-Host "Winget a été installé avec succès." -ForegroundColor Green
+# --- 2. Attendre une connexion Internet ---
+$connected = $false
+1..12 | ForEach-Object {
+    if (Test-NetConnection -ComputerName "www.msftconnecttest.com" -WarningAction SilentlyContinue) {
+        Write-Log "Connexion Internet détectée."
+        $connected = $true
+        return
+    }
+    Start-Sleep -Seconds 15
 }
-else {
-    Write-Host "Winget est déjà installé." -ForegroundColor Green
+
+if (-not $connected) {
+    Write-Log "ERREUR: Pas de connexion Internet. L'installation des applications est annulée."
+    exit
 }
 
-# Mise a jour des sources Winget
-winget source update
+# --- 3. Mise à jour des sources Winget ---
+Write-Log "Mise à jour des sources winget..."
+try {
+    winget source update --silent | Out-Null
+    Write-Log "Sources winget mises à jour."
+} catch {
+    Write-Log "AVERTISSEMENT: La mise à jour des sources winget a échoué."
+}
 
-# Installation des logiciels 
-winget install --accept-package-agreements --accept-source-agreements google.chrome VideoLAN.VLC TheDocumentFoundation.LibreOffice Google.GoogleDrive Adobe.Acrobat.Reader.64-bit 9NR5B8GVVM13 9NBLGGH4QGHW
+# --- 4. Liste des applications à installer ---
+$appsToInstall = @(
+    @{ Name = "Google Chrome"; Id = "Google.Chrome" },
+    @{ Name = "VLC media player"; Id = "VideoLAN.VLC" },
+    @{ Name = "LibreOffice"; Id = "TheDocumentFoundation.LibreOffice" },
+    @{ Name = "Google Drive"; Id = "Google.Drive" },
+    @{ Name = "Adobe Acrobat Reader DC"; Id = "Adobe.Acrobat.Reader.64-bit" },
+    @{ Name = "Lenovo Commercial Vantage"; Id = "9NR5B8GVVM13"; Source = "msstore" },
+    @{ Name = "Microsoft Sticky Notes"; Id = "9NBLGGH4QGHW"; Source = "msstore" }
+)
+
+# --- 5. Boucle d'installation ---
+foreach ($app in $appsToInstall) {
+    Write-Log "Installation de : $($app.Name) (ID: $($app.Id))"
+    $source = if ($app.Source) { $app.Source } else { "winget" }
+    try {
+        winget install --id $app.Id --source $source --accept-package-agreements --accept-source-agreements -h
+        Write-Log "SUCCÈS: $($app.Name) a été installé."
+    }
+    catch {
+        Write-Log "ERREUR lors de l'installation de $($app.Name). Message : $($_.Exception.Message)"
+    }
+}
+
+Write-Log "--- Fin du script d'installation des applications ---"
 
 
 #--------------------------------------

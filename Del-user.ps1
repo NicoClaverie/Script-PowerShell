@@ -1,9 +1,10 @@
-<#  Généré par GEMINI
+<# Généré par GEMINI
 .SYNOPSIS
-    Supprime de manière interactive un utilisateur local, son profil et sa clé de registre.
+    Supprime de manière complète un utilisateur local, son profil, sa clé de registre et les caches associés.
 .DESCRIPTION
     Ce script demande à l'utilisateur quel compte supprimer, vérifie les droits admin,
-    demande une confirmation, puis nettoie toutes les traces du compte de manière fiable.
+    demande une confirmation, puis nettoie toutes les traces du compte de manière fiable,
+    y compris les données en cache du LogonUI et des Stratégies de Groupe.
 #>
 
 # =============================================================================
@@ -12,10 +13,7 @@
 if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     Write-Warning "Ce script necessite des privileges d'administrateur pour fonctionner."
     Write-Warning "Tentative de re-lancement automatique en tant qu'administrateur..."
-    
-    # Ré-exécute le script actuel avec des droits élevés
     Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
-    # Quitte la session actuelle non-admin
     exit
 }
 
@@ -23,78 +21,81 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 # Étape 2: Demande interactive à l'utilisateur
 # =============================================================================
 Clear-Host
-Write-Host "Outil de suppression de compte utilisateur local" -ForegroundColor Yellow
-Write-Host "------------------------------------------------"
+Write-Host "Outil de suppression COMPLÈTE de compte utilisateur local" -ForegroundColor Yellow
+Write-Host "--------------------------------------------------------"
 
-# Demande le nom de l'utilisateur
 $UserName = Read-Host -Prompt "Veuillez saisir le nom du compte local à supprimer"
-
-# Vérifie si l'utilisateur a entré quelque chose
 if ([string]::IsNullOrWhiteSpace($UserName)) {
-    Write-Error "Le nom d'utilisateur ne peut pas etre vide. Operation annulee."
-    Read-Host "Appuyez sur Entree pour quitter."
+    Write-Error "Le nom d'utilisateur ne peut pas être vide. Opération annulée."
+    Read-Host "Appuyez sur Entrée pour quitter."
     exit
 }
 
-# Demande une confirmation (sécurité)
 Write-Host ""
-$Confirmation = Read-Host "Etes-vous certain de vouloir supprimer DEFINITIVEMENT le compte '$UserName' et toutes ses donnees (profil, etc.) ? (O/N)"
-
+$Confirmation = Read-Host "Êtes-vous certain de vouloir supprimer DÉFINITIVEMENT le compte '$UserName' et TOUTES ses données ? (O/N)"
 if ($Confirmation.ToUpper() -ne 'O') {
-    Write-Host "Operation annulée par l'utilisateur." -ForegroundColor Yellow
-    Read-Host "Appuyez sur Entree pour quitter."
+    Write-Host "Opération annulée par l'utilisateur." -ForegroundColor Yellow
+    Read-Host "Appuyez sur Entrée pour quitter."
     exit
 }
 
 # =============================================================================
 # Étape 3: Processus de suppression
 # =============================================================================
-Write-Host "------------------------------------------------"
-Write-Host "Debut du processus de suppression pour '$UserName'..." -ForegroundColor Cyan
+Write-Host "--------------------------------------------------------"
+Write-Host "Début du processus de suppression pour '$UserName'..." -ForegroundColor Cyan
 
 try {
     # --- Recherche de l'utilisateur et de ses informations AVANT toute suppression ---
     $UserAccount = Get-LocalUser -Name $UserName -ErrorAction Stop
     $UserSID = $UserAccount.SID.Value
-    Write-Host "[INFO] Utilisateur '$UserName' trouve avec le SID: $UserSID." -ForegroundColor Gray
+    Write-Host "[INFO] Utilisateur '$UserName' trouvé avec le SID: $UserSID." -ForegroundColor Gray
 
-    # --- Récupération du chemin du profil via WMI/CIM (plus fiable) ---
+    # --- Récupération du chemin du profil via WMI/CIM ---
     $Profile = Get-CimInstance -ClassName Win32_UserProfile | Where-Object { $_.SID -eq $UserSID }
     $ProfilePath = $Profile.LocalPath
     
     # --- Suppression du compte utilisateur ---
     Write-Host "Tentative de suppression du compte..."
     Remove-LocalUser -Name $UserName -ErrorAction Stop
-    Write-Host "[SUCCÈS] Le compte utilisateur '$UserName' a ete supprime." -ForegroundColor Green
+    Write-Host "[SUCCÈS] Le compte utilisateur '$UserName' a été supprimé." -ForegroundColor Green
 
     # --- Suppression du dossier de profil (C:\Users\...) ---
     if ($ProfilePath -and (Test-Path $ProfilePath)) {
         Write-Host "Tentative de suppression du dossier de profil '$ProfilePath'..."
         Remove-Item -Path $ProfilePath -Recurse -Force -ErrorAction Stop
-        Write-Host "[SUCCÈS] Le dossier de profil a été supprime." -ForegroundColor Green
+        Write-Host "[SUCCÈS] Le dossier de profil a été supprimé." -ForegroundColor Green
     } else {
-        Write-Host "[INFO] Aucun dossier de profil trouve pour cet utilisateur." -ForegroundColor Gray
+        Write-Host "[INFO] Aucun dossier de profil physique trouvé pour cet utilisateur." -ForegroundColor Gray
     }
     
-    # La suppression de l'utilisateur via Remove-LocalUser supprime aussi la clé de registre du profil.
-    # Une vérification manuelle n'est plus nécessaire mais peut être laissée par sécurité.
-    $ProfileRegPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\$UserSID"
-    if (Test-Path $ProfileRegPath) {
-        Write-Warning "[AVERTISSEMENT] La cle de registre du profil existe toujours. Tentative de suppression forcee."
-        Remove-Item -Path $ProfileRegPath -Recurse -Force -ErrorAction SilentlyContinue
-    } else {
-        Write-Host "[INFO] La cle de registre du profil a bien ete nettoyee." -ForegroundColor Gray
+    # --- [NOUVEAU] Nettoyage des caches résiduels dans le registre ---
+    Write-Host "Nettoyage des traces résiduelles dans le registre..."
+
+    # 1. Nettoyage du cache des Stratégies de Groupe (Group Policy)
+    $GPStorePath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Group Policy\DataStore\$UserSID"
+    if (Test-Path $GPStorePath) {
+        Remove-Item -Path $GPStorePath -Recurse -Force
+        Write-Host "[SUCCÈS] Le cache des stratégies de groupe a été supprimé." -ForegroundColor Green
     }
 
+    # 2. Nettoyage du cache de l'écran de connexion (LogonUI)
+    $SessionDataPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication\LogonUI\SessionData"
+    Get-ChildItem -Path $SessionDataPath -ErrorAction SilentlyContinue | ForEach-Object {
+        # Pour chaque session en cache, on vérifie si le SID correspond à celui de l'utilisateur supprimé
+        $SessionSID = (Get-ItemProperty -Path $_.PSPath -Name LoggedOnUserSID -ErrorAction SilentlyContinue).LoggedOnUserSID
+        if ($SessionSID -eq $UserSID) {
+            Remove-Item -Path $_.PSPath -Recurse -Force
+            Write-Host "[SUCCÈS] L'entrée de cache LogonUI pour la session '$($_.PSChildName)' a été supprimée." -ForegroundColor Green
+        }
+    }
 }
 catch {
-    # Gère toutes les erreurs qui ont pu se produire dans le bloc 'try'
     Write-Error "Une erreur est survenue : $($_.Exception.Message)"
-    Write-Error "L'operation n'a peut-être pas ete completee. Vérification manuelle recommandee."
+    Write-Error "L'opération n'a peut-être pas été complétée. Vérification manuelle recommandée."
 }
 finally {
-    # Ce bloc s'exécute toujours, que le 'try' réussisse ou échoue
-    Write-Host "------------------------------------------------"
-    Write-Host "Nettoyage termine !" -ForegroundColor Yellow
-    Read-Host "Appuyez sur Entree pour fermer la fenetre."
+    Write-Host "--------------------------------------------------------"
+    Write-Host "Nettoyage complet terminé !" -ForegroundColor Yellow
+    Read-Host "Appuyez sur Entrée pour fermer la fenêtre."
 }

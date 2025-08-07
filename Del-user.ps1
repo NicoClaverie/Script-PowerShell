@@ -1,9 +1,9 @@
-<# Généré par Gemini
+<#
 .SYNOPSIS
     Supprime de manière interactive un utilisateur local, son profil et sa clé de registre.
 .DESCRIPTION
     Ce script demande à l'utilisateur quel compte supprimer, vérifie les droits admin,
-    demande une confirmation, puis nettoie toutes les traces du compte.
+    demande une confirmation, puis nettoie toutes les traces du compte de manière fiable.
 #>
 
 # =============================================================================
@@ -14,7 +14,7 @@ if (-NOT ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     Write-Warning "Tentative de re-lancement automatique en tant qu'administrateur..."
     
     # Ré-exécute le script actuel avec des droits élevés
-    Start-Process powershell.exe -ArgumentList "-File `"$PSCommandPath`"" -Verb RunAs
+    Start-Process powershell.exe -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
     # Quitte la session actuelle non-admin
     exit
 }
@@ -41,7 +41,7 @@ Write-Host ""
 $Confirmation = Read-Host "Etes-vous certain de vouloir supprimer DEFINITIVEMENT le compte '$UserName' et toutes ses donnees (profil, etc.) ? (O/N)"
 
 if ($Confirmation.ToUpper() -ne 'O') {
-    Write-Host "Operation annulee par l'utilisateur." -ForegroundColor Yellow
+    Write-Host "Operation annulée par l'utilisateur." -ForegroundColor Yellow
     Read-Host "Appuyez sur Entree pour quitter."
     exit
 }
@@ -50,42 +50,51 @@ if ($Confirmation.ToUpper() -ne 'O') {
 # Étape 3: Processus de suppression
 # =============================================================================
 Write-Host "------------------------------------------------"
-Write-Host "Tentative de suppression du compte '$UserName'..." -ForegroundColor Cyan
+Write-Host "Debut du processus de suppression pour '$UserName'..." -ForegroundColor Cyan
 
-# Recherche du SID de l'utilisateur avant suppression
 try {
-    $UserObject = New-Object System.Security.Principal.NTAccount($UserName)
-    $UserSID = $UserObject.Translate([System.Security.Principal.SecurityIdentifier]).Value
+    # --- Recherche de l'utilisateur et de ses informations AVANT toute suppression ---
+    $UserAccount = Get-LocalUser -Name $UserName -ErrorAction Stop
+    $UserSID = $UserAccount.SID.Value
     Write-Host "[INFO] Utilisateur '$UserName' trouve avec le SID: $UserSID." -ForegroundColor Gray
+
+    # --- Récupération du chemin du profil via WMI/CIM (plus fiable) ---
+    $Profile = Get-CimInstance -ClassName Win32_UserProfile | Where-Object { $_.SID -eq $UserSID }
+    $ProfilePath = $Profile.LocalPath
+    
+    # --- Suppression du compte utilisateur ---
+    Write-Host "Tentative de suppression du compte..."
+    Remove-LocalUser -Name $UserName -ErrorAction Stop
+    Write-Host "[SUCCÈS] Le compte utilisateur '$UserName' a ete supprime." -ForegroundColor Green
+
+    # --- Suppression du dossier de profil (C:\Users\...) ---
+    if ($ProfilePath -and (Test-Path $ProfilePath)) {
+        Write-Host "Tentative de suppression du dossier de profil '$ProfilePath'..."
+        Remove-Item -Path $ProfilePath -Recurse -Force -ErrorAction Stop
+        Write-Host "[SUCCÈS] Le dossier de profil a été supprime." -ForegroundColor Green
+    } else {
+        Write-Host "[INFO] Aucun dossier de profil trouve pour cet utilisateur." -ForegroundColor Gray
+    }
+    
+    # La suppression de l'utilisateur via Remove-LocalUser supprime aussi la clé de registre du profil.
+    # Une vérification manuelle n'est plus nécessaire mais peut être laissée par sécurité.
+    $ProfileRegPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\$UserSID"
+    if (Test-Path $ProfileRegPath) {
+        Write-Warning "[AVERTISSEMENT] La cle de registre du profil existe toujours. Tentative de suppression forcee."
+        Remove-Item -Path $ProfileRegPath -Recurse -Force -ErrorAction SilentlyContinue
+    } else {
+        Write-Host "[INFO] La cle de registre du profil a bien ete nettoyee." -ForegroundColor Gray
+    }
+
 }
 catch {
-    Write-Error "Impossible de trouver l'utilisateur '$UserName' sur cette machine. Verifiez le nom et reessayez."
-    Read-Host "Appuyez sur Entree pour quitter."
-    exit
+    # Gère toutes les erreurs qui ont pu se produire dans le bloc 'try'
+    Write-Error "Une erreur est survenue : $($_.Exception.Message)"
+    Write-Error "L'operation n'a peut-être pas ete completee. Vérification manuelle recommandee."
 }
-
-# Suppression du compte
-net user $UserName /delete
-if ($LASTEXITCODE -ne 0) {
-    Write-Warning "[AVERTISSEMENT] Echec de la commande 'net user'. Le compte est peut-être deja supprime ou protege."
-} else {
-    Write-Host "[SUCCES] Le compte utilisateur '$UserName' a ete supprime." -ForegroundColor Green
+finally {
+    # Ce bloc s'exécute toujours, que le 'try' réussisse ou échoue
+    Write-Host "------------------------------------------------"
+    Write-Host "Nettoyage termine !" -ForegroundColor Yellow
+    Read-Host "Appuyez sur Entree pour fermer la fenetre."
 }
-
-# Suppression de la clé de registre du profil
-$ProfileRegPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\$UserSID"
-if (Test-Path $ProfileRegPath) {
-    Remove-Item -Path $ProfileRegPath -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "[SUCCES] La cle de registre du profil a ete supprimee." -ForegroundColor Green
-}
-
-# Suppression du dossier de profil (C:\Users\...)
-$ProfilePath = (Get-ItemProperty -Path $ProfileRegPath -Name ProfileImagePath -ErrorAction SilentlyContinue).ProfileImagePath
-if ($ProfilePath -and (Test-Path $ProfilePath)) {
-    Remove-Item -Path $ProfilePath -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "[SUCCES] Le dossier de profil '$ProfilePath' a ete supprime." -ForegroundColor Green
-}
-
-Write-Host "------------------------------------------------"
-Write-Host "Nettoyage termine !" -ForegroundColor Yellow
-Read-Host "Appuyez sur Entree pour fermer la fenetre."

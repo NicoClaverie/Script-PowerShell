@@ -1,4 +1,4 @@
-<#
+<#  Généré par GEMINI
 .SYNOPSIS
     Supprime de manière interactive un utilisateur local, son profil et sa clé de registre.
 .DESCRIPTION

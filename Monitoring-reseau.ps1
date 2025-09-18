@@ -28,16 +28,16 @@ $DefaultInterval = 15 # Intervalle par defaut en secondes
 
 # --- Demander les cibles a l'utilisateur ---
 Write-Host "Configuration de la surveillance :" -ForegroundColor Yellow
-$InputString = Read-Host "Entrez les adresses IP ou noms d'hôte des PC a surveiller, separes par une virgule (,)"
+$InputString = Read-Host "Entrez les adresses IP ou noms d'hote des PC a surveiller, separes par une virgule (,)"
 
 if ([string]::IsNullOrWhiteSpace($InputString)) {
-    Write-Error "Aucune cible n'a ete entree. Le script va s'arrêter."
+    Write-Error "Aucune cible n'a ete entree. Le script va s'arreter."
     Exit
 }
 # Traiter l'entree : separer par virgule, enlever les espaces vides, filtrer les entrees vides
 $Targets = $InputString.Split(',') | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
 if ($Targets.Count -eq 0) {
-    Write-Error "Aucune cible valide trouvee apres traitement de l'entree. Le script va s'arrêter."
+    Write-Error "Aucune cible valide trouvee apres traitement de l'entree. Le script va s'arreter."
     Exit
 }
 Write-Host "Cibles a surveiller :"
@@ -61,7 +61,7 @@ if ([string]::IsNullOrWhiteSpace($IntervalInput)) {
             Write-Host "Intervalle personnalise utilise : $IntervalSeconds secondes."
         } else {
             # Si le nombre n'est pas positif
-            Write-Warning "L'intervalle doit être un nombre entier positif. Utilisation de la valeur par defaut ($DefaultInterval secondes)."
+            Write-Warning "L'intervalle doit etre un nombre entier positif. Utilisation de la valeur par defaut ($DefaultInterval secondes)."
             $IntervalSeconds = $DefaultInterval
         }
     } catch {
@@ -106,7 +106,7 @@ while ($true) {
                 # On utilise Add-Content directement, il cree le fichier s'il n'existe pas
                 Add-Content -Path $LogFilePath -Value "--- Log de surveillance pour $Target demarre le $(Get-Date) ---" -ErrorAction Stop
             } catch {
-                Write-Error "Impossible de creer/ecrire l'en-tête dans le fichier log : $LogFilePath. Erreur : $($_.Exception.Message)"
+                Write-Error "Impossible de creer/ecrire l'en-tete dans le fichier log : $LogFilePath. Erreur : $($_.Exception.Message)"
                 # On passe a la cible suivante si ce fichier pose probleme
                 continue
             }

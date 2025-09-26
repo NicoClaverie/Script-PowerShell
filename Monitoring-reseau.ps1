@@ -75,7 +75,7 @@ Write-Host "----------------------------------------" -ForegroundColor Yellow
 
 
 # --- Demarrage de la surveillance ---
-Write-Host "Demarrage de la surveillance le $(Get-Date). Appuyez sur Ctrl+C pour arrêter." -ForegroundColor Cyan
+Write-Host "Demarrage de la surveillance le $(Get-Date). Appuyez sur Ctrl+C pour arreter." -ForegroundColor Cyan
 Write-Host "Les logs separes sont enregistres dans $LogDirectory" -ForegroundColor Cyan
 Write-Host "Intervalle entre les pings : $IntervalSeconds secondes." -ForegroundColor Cyan
 Write-Host "----------------------------------------" -ForegroundColor Yellow

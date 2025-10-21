@@ -237,8 +237,6 @@ $CRDBasePath = "C:\Program Files (x86)\Google\Chrome Remote Desktop"
 # Nom de l'executable
 $CRDVersionExe = "remoting_host.exe" 
 
-"---" | Out-File $LogFile -Append
-
 try {
     # 1. Trouver le dossier versionne le plus recent sous le chemin de base
     # On utilise Get-ChildItem sans filtre pour lister tous les dossiers versionnes

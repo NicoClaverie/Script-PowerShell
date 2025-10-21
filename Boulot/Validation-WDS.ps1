@@ -238,7 +238,6 @@ $CRDBasePath = "C:\Program Files (x86)\Google\Chrome Remote Desktop"
 $CRDVersionExe = "remoting_host.exe" 
 
 "---" | Out-File $LogFile -Append
-"Verification de la presence et de la version de Chrome Remote Desktop (Dynamique)..." | Out-File $LogFile -Append
 
 try {
     # 1. Trouver le dossier versionne le plus recent sous le chemin de base
@@ -273,7 +272,7 @@ try {
     }
     
     if ($Version) {
-        "Version Chrome Remote Desktop : $Version (lue depuis remoting_host.exe)" | Out-File $LogFile -Append
+        "Version Chrome Remote Desktop : $Version" | Out-File $LogFile -Append
         Write-Host "Version Chrome Remote Desktop detectee : $Version"
     } else {
         "Version Chrome Remote Desktop : ATTENTION, executable present mais version non detectee." | Out-File $LogFile -Append
@@ -293,8 +292,6 @@ catch {
 # Definir les chemins
 $BitserPath = "C:\Program Files (x86)\Bitser"
 $BitserExe = Join-Path -Path $BitserPath -ChildPath "Bitser.exe"
-
-"Verification de la presence et de la version de Bitser..." | Out-File $LogFile -Append
 
 if (Test-Path -Path $BitserExe) {
     

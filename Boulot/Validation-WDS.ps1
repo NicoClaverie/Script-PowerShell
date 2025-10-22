@@ -7,10 +7,54 @@
 #######################################################################
 
 
+# Vérifie si la session actuelle a les droits d'administrateur
+$currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    # Si non, on relance le script actuel en demandant l'élévation
+    $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+    Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments
+    # On quitte la session non-administrateur
+    exit
+}
+
+
 # Definir le chemin du fichier de log
 $LogFile = "C:\Temp\Validation_WDS_Simple.log"
 
-# 1. ecrire l'heure et la date d'execution
+
+####################################################################################
+# 1. Demander les identifiants de domaine AD
+# Un utilisateur AD valide qui a le droit de lire l'annuaire.
+$ADCredentials = Get-Credential -Message "Veuillez entrer vos identifiants de domaine Active Directory"
+
+# 2. Spécifier le chemin LDAP (la racine de votre domaine)
+$DomainPath = "LDAP://TER_SUD.local" 
+
+# 3. Créer un objet DirectoryEntry authentifié
+# C'est cet objet qui établit la connexion au serveur AD avec les identifiants fournis.
+$DomainEntry = New-Object System.DirectoryServices.DirectoryEntry `
+    -ArgumentList $DomainPath, $ADCredentials.UserName, $ADCredentials.GetNetworkCredential().Password
+
+# 4. Créer le DirectorySearcher et lui assigner la connexion authentifiée
+$ADSI = New-Object System.DirectoryServices.DirectorySearcher
+$ADSI.SearchRoot = $DomainEntry # Le SearchRoot utilise maintenant la connexion de domaine.
+
+# 5. Définir le filtre et exécuter la recherche
+$ADSI.Filter = "(&(objectCategory=computer)(cn=$env:COMPUTERNAME))"
+
+# Effectuer la recherche et afficher/enregistrer le résultat
+$SearchResult = $ADSI.FindOne()
+
+if ($SearchResult) {
+    Write-Host "Chemin AD trouve et enregistre : $($SearchResult.Path)"
+} else {
+    Write-Error "Impossible de trouver l'objet ordinateur dans l'Active Directory."
+}
+
+
+####################################################################################
+
+# 1. ecrire l'heure et la date d'executionn
 $DateExecution = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 "=======================================================" | Out-File $LogFile
 "Deploiement WDS verifie le $DateExecution" | Out-File $LogFile -Append
@@ -18,6 +62,12 @@ $DateExecution = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 # 2. ecrire le Hostname (Nom de l'ordinateur)
 $Hostname = $env:COMPUTERNAME
 "Hostname : $Hostname" | Out-File $LogFile -Append
+$SearchResult.Path | Out-File $LogFile -Append
+"Ordinateur verifie par $($ADCredentials.UserName)" | Out-File $LogFile -Append
+#$ADSI = New-Object System.DirectoryServices.DirectorySearcher
+#$ADSI.Filter = "(&(objectCategory=computer)(cn=$env:COMPUTERNAME))"
+#$ADSI.FindOne().Path | Out-File $LogFile -Append
+#$ADSI.FindOne().Path
 "=======================================================" | Out-File $LogFile -Append
 
 # 3. Verifie la presence du XML pour les applications par defaut
@@ -49,7 +99,6 @@ if (Test-Path -Path "C:\Windows\Certificat\_.groupe-terresdusud.fr.crt") {
 
 # Changement de section
 "---" | Out-File $LogFile -Append
-"Verification des pilotes d'impression :" | Out-File $LogFile -Append
 
 # 5. Verifie la presence du des drivers Canon
 
@@ -101,8 +150,6 @@ if (Test-Path -Path "C:\Imprimantes\XEROX\UNIV_5.1035.2.0_PCL6_x64_Driver.inf") 
 
 # Changement de section
 "---" | Out-File $LogFile -Append
-"Verification de la presence et de la version des logiciels :" | Out-File $LogFile -Append
-
 
 ################################################ Libre Office ################################################
 
@@ -142,6 +189,8 @@ if (Test-Path -Path "C:\Program Files\LibreOffice\program") {
     Write-Host "Verification LibreOffice : ERREUR, l'executable n'a pas ete trouve." -ForegroundColor Red
 }
 
+"---" | Out-File $LogFile -Append
+
 ################################################ GLPI ################################################
 
 # 10. Verifie la presence et la version de GLPI Agent
@@ -149,8 +198,6 @@ if (Test-Path -Path "C:\Program Files\LibreOffice\program") {
 # Definir les chemins
 $GLPIAgentPath = "C:\Program Files\GLPI-Agent\perl\bin"
 $GLPIAgentExe = Join-Path -Path $GLPIAgentPath -ChildPath "glpi-agent.exe"
-
-"Verification de la presence et de la version de l'Agent GLPI..." | Out-File $LogFile -Append
 
 if (Test-Path -Path $GLPIAgentExe) {
     
@@ -372,7 +419,7 @@ $PDFSamExe = Join-Path -Path $PDFSamPath -ChildPath "pdfsam.exe"
 if (Test-Path -Path $PDFSamExe) {
     
     # Le fichier existe, c'est OK
-    "Statut PDFsam Basic : PRESENT et OK " | Out-File $LogFile -Append
+    "Statut PDFsam Basic : OK " | Out-File $LogFile -Append
     Write-Host "Verification PDFsam Basic : OK" -ForegroundColor Green
     
     # Tenter d'obtenir la version
@@ -453,12 +500,12 @@ $RegistryPath = "HKLM:\SOFTWARE\Classes\Applications\photoviewer.dll"
 if (Test-Path -Path $RegistryPath) {
     
     # La cle de base existe, ce qui est le signe de l'activation.
-    "Statut Visionneuse : PRESENT. La cle principale du Registre a ete trouvee." | Out-File $LogFile -Append
+    "Statut Visionneuse : OK." | Out-File $LogFile -Append
     Write-Host "Verification Visionneuse Windows : OK" -ForegroundColor Green
     
     # Facultatif: Verifier la presence d'une sous-cle specifique pour plus de certitude
     if (Test-Path -Path "$RegistryPath\shell\open\command") {
-        "Statut Visionneuse : OK. Le chemin d'ouverture par defaut est bien configure." | Out-File $LogFile -Append
+        "Statut chemin d'ouverture Visionneuse : OK." | Out-File $LogFile -Append
     } else {
         "Statut Visionneuse : ATTENTION. Cle principale trouvee, mais la commande d'ouverture (shell\open\command) est manquante." | Out-File $LogFile -Append
         Write-Host "Verification Visionneuse Windows : ATTENTION (Cle de commande manquante)" -ForegroundColor Yellow
@@ -477,8 +524,6 @@ if (Test-Path -Path $RegistryPath) {
 
 # Definir le chemin du fichier de log principal
 $RegistryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
-
-"Extraction des regles de la GPO Locales System ($RegistryPath)..." | Out-File $LogFile -Append
 
 if (Test-Path -Path $RegistryPath) {
     
@@ -590,8 +635,6 @@ catch {
     Write-Host "Verification SentinelOne Fichiers : ERREUR, l'agent n'a pas ete trouve." -ForegroundColor Red
 }
 
-"RESUME SentinelOne : $S1DeploymentStatus" | Out-File $LogFile -Append
-
 "---" | Out-File $LogFile -Append
 
 
@@ -662,6 +705,7 @@ catch {
 
 "---" | Out-File $LogFile -Append
 
+
 #############################################################################
 #
 #                                Impression
@@ -678,14 +722,41 @@ $PrinterIP = "192.110.58.48"       # Remplacer par l'IP de votre imprimante
 $PrinterPort = 9100                # Le port standard pour l'impression Raw
 
 # --- NOUVELLE eTAPE : Charger le contenu du fichier Log ---
+
+# -----------------------------------------------------------------------------------
+
+# --- NOUVELLE LOGIQUE DE COUPE DE LIGNE (WrapWidth = 80) ---
+$WrapWidth = 78
+
 if (Test-Path -Path $LogFile) {
-    # Lire le contenu du fichier genere (necessaire pour l'impression Raw)
-    $ContentToPrint = Get-Content -Path $LogFile -Encoding ASCII | Out-String
-    Write-Host "Contenu du fichier log charge. Taille : $($ContentToPrint.Length) octets."
+    Write-Host "Contenu du fichier log chargé. Formatage pour impression..."
+    
+    # Charger le contenu ligne par ligne
+    $RawContentLines = Get-Content -Path $LogFile -Encoding ASCII 
+    $FormattedContent = New-Object System.Text.StringBuilder
+
+    # Couper les lignes trop longues
+    foreach ($Line in $RawContentLines) {
+        $CurrentLine = $Line
+        
+        while ($CurrentLine.Length -gt $WrapWidth) {
+            # Ajout de la partie coupée + saut de ligne (CRLF)
+            [void]$FormattedContent.Append($CurrentLine.Substring(0, $WrapWidth) + "`r`n")
+            # Enlever la partie traitée
+            $CurrentLine = $CurrentLine.Substring($WrapWidth)
+        }
+        
+        # Ajouter le reste de la ligne + saut de ligne
+        [void]$FormattedContent.Append($CurrentLine + "`r`n")
+    }
+
+    $ContentToPrint = $FormattedContent.ToString()
+    Write-Host "Contenu formaté chargé. Taille : $($ContentToPrint.Length) octets."
 } else {
-    Write-Host "ERREUR : Fichier log ($LogFile) non trouve. Impossible d'imprimer." -ForegroundColor Red
-    exit # Arrêter le script si le fichier log est absent
+    Write-Host "ERREUR : Fichier log ($LogFile) non trouvé. Impossible d'imprimer." -ForegroundColor Red
+    return # Utiliser 'return' au lieu de 'exit' pour ne pas arrêter le script principal
 }
+# --- FIN DE LA LOGIQUE DE COUPE DE LIGNE ---
 
 # --- Execution ---
 try {

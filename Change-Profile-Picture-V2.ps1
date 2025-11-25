@@ -7,7 +7,7 @@ $Avatar_Default = Join-Path $AvatarFolder "user.jpg"
 $Users = Get-LocalUser | Where-Object { $_.Enabled -eq $true }
 
 # Liste des résolutions à générer
-$Resolutions = @(32, 40, 48, 64, 96, 108, 192, 208, 240, 424, 448)
+$Resolutions = @(32, 40, 48, 64, 96, 108, 192, 208, 240, 424, 448, 1080)
 
 # Charger l'assembly System.Drawing
 Add-Type -AssemblyName System.Drawing

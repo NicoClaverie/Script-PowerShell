@@ -119,11 +119,9 @@ catch {
 
 "---" | Out-File $LogFile -Append
 
-
-
-
-
-# --- Vérifications Fichiers de base ---
+#############################################################################
+#                            Vérifications Fichiers de base
+#############################################################################
 
 if (Test-Path "C:\DefaultApps\AppDefault.xml") {
     "Fichier AppDefault.xml : OK" | Out-File $LogFile -Append; Write-Host "AppDefault.xml : OK" -ForegroundColor Green
@@ -139,12 +137,10 @@ else {
     "Certificat GLPI : ABSENT" | Out-File $LogFile -Append; Write-Host "Certificat GLPI : ERREUR" -ForegroundColor Red
 }
 
-
-
-
 #############################################################################
 #                            Partie Imprimantes
 #############################################################################
+
 "---" | Out-File $LogFile -Append
 
 $Drivers = @(
@@ -166,9 +162,10 @@ foreach ($d in $Drivers) {
 #############################################################################
 #                            Partie Logiciels
 #############################################################################
+
 "---" | Out-File $LogFile -Append
 
-# Fonction générique pour vérifier un EXE
+# ----------------------------- Fonction générique pour vérifier un EXE -----------------------------
 function Check-App {
     param($Name, $Path)
     if (Test-Path $Path) {
@@ -189,14 +186,23 @@ function Check-App {
     }
 }
 
+# Verification de Libre Office
+
 Check-App -Name "LibreOffice" -Path "C:\Program Files\LibreOffice\program\soffice.exe"
 "---" | Out-File $LogFile -Append
+
+# Verification de l'Agent GLPI
+
 Check-App -Name "Agent GLPI" -Path "C:\Program Files\GLPI-Agent\perl\bin\glpi-agent.exe"
 "---" | Out-File $LogFile -Append
+
+# Verification de Lenovo system update
+
 Check-App -Name "Lenovo System Update" -Path "C:\Program Files (x86)\Lenovo\System Update\tvsu.exe"
 "---" | Out-File $LogFile -Append
 
-# Chrome Remote Desktop
+# ----------------------------- Chrome Remote Desktop -----------------------------
+
 $CRDBase = "C:\Program Files (x86)\Google\Chrome Remote Desktop"
 try {
     $CRDFolder = Get-ChildItem -Path $CRDBase -Directory -ErrorAction Stop | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName -First 1
@@ -216,7 +222,8 @@ catch {
 Check-App -Name "Bitser" -Path "C:\Program Files (x86)\Bitser\Bitser.exe"
 "---" | Out-File $LogFile -Append
 
-# Manage Engine
+# ----------------------------- Manage Engine -----------------------------
+
 if (Test-Path "C:\Program Files (x86)\ManageEngine\UEMS_Agent") {
     try {
         $Svc = Get-Service -Name "ManageEngine UEMS - Agent" -ErrorAction Stop
@@ -247,7 +254,24 @@ Check-App -Name "PDFsam Basic" -Path "C:\Program Files\PDFsam Basic\pdfsam.exe"
 #                            Vérifications Système
 #############################################################################
 
-# Gestion USB
+#----------------------------- Activation du RDP ----------------------------- 
+
+$rdpKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server"
+$rdpValue = Get-ItemProperty -Path $rdpKey -Name fDenyTSConnections
+
+if ($rdpValue.fDenyTSConnections -eq 0) {
+    "RDP est ACTIVÉ" | Out-File $LogFile -Append
+    Write-Host "RDP est ACTIVÉ" -ForegroundColor Green
+}
+else {
+    "RDP est DÉSACTIVÉ" | Out-File $LogFile -Append
+    Write-Host "RDP est DÉSACTIVÉ" -ForegroundColor Yellow
+}
+
+"---" | Out-File $LogFile -Append
+
+#----------------------------- Gestion USB ----------------------------- 
+
 $PowerInstances = Get-CimInstance -ClassName MSPower_DeviceEnable -Namespace root/WMI
 $UsbDevices = Get-CimInstance -ClassName Win32_PnPEntity -Filter "PNPClass = 'USB'"
 $Mismatched = 0
@@ -263,7 +287,8 @@ else {
     "USB Power : OK" | Out-File $LogFile -Append; Write-Host "USB Power : OK" -ForegroundColor Green
 }
 
-# Visionneuse Photo
+# ----------------------------- Visionneuse Photo ----------------------------- 
+
 "---" | Out-File $LogFile -Append
 if (Test-Path "HKLM:\SOFTWARE\Classes\Applications\photoviewer.dll") {
     "Visionneuse Photo : OK" | Out-File $LogFile -Append; Write-Host "Visionneuse Photo : OK" -ForegroundColor Green
@@ -272,7 +297,8 @@ else {
     "Visionneuse Photo : ABSENT" | Out-File $LogFile -Append; Write-Host "Visionneuse Photo : ERREUR" -ForegroundColor Red
 }
 
-# GPO System
+# ----------------------------- GPO System ----------------------------- 
+
 "---" | Out-File $LogFile -Append
 if (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System") {
     "GPO System : OK (Regles trouvees)" | Out-File $LogFile -Append; Write-Host "GPO System : OK" -ForegroundColor Green
@@ -284,11 +310,8 @@ else {
 
 "---" | Out-File $LogFile -Append
 
-#############################################################################
-#                    VSS & Windows Update & Winget
-#############################################################################
+# ----------------------------- VSSadmin pour la protection systeme ----------------------------- 
 
-# VSS (Protection Système)
 $shadow = vssadmin list shadows | Select-String "C:"
 if ($shadow) {
     "Protection systeme C: : ACTIVE" | Out-File $LogFile -Append; Write-Host "Protection systeme C: : ACTIVE" -ForegroundColor Green
@@ -296,6 +319,7 @@ if ($shadow) {
 else {
     "Protection systeme C: : INACTIVE/VIDE" | Out-File $LogFile -Append; Write-Host "Protection systeme C: : ATTENTION" -ForegroundColor Yellow
 }
+
 $line = vssadmin list shadowstorage | Select-String "Espace maximal" | Select-Object -First 1
 
 # Extraction propre du pourcentage "nombre%"
@@ -315,12 +339,11 @@ else {
 }
 
 
-#$vssLine = (vssadmin list shadowstorage | Select-String "Espace maximal" | Select-Object -First 1)
-#if ($vssLine) { "Quota VSS : $($vssLine.Line.Trim())" | Out-File $LogFile -Append }
 
 "---" | Out-File $LogFile -Append
 
-# 1. Windows Update (Méthode Avancée : Sécurité vs Office)
+#----------------------------- 1. Windows Update (Méthode Avancée : Sécurité vs Office) ----------------------------- 
+
 Write-Host "Analyse Windows Update (OS vs Office 2016 vs Antivirus)..." -ForegroundColor Cyan
 try {
     $UpdateSession = New-Object -ComObject Microsoft.Update.Session
@@ -373,7 +396,8 @@ catch {
 }
 "---" | Out-File $LogFile -Append
 
-# 2. Vérification WINGET (Méthode demandée : Comptage mots-clés)
+#----------------------------- 2. Vérification WINGET (Méthode demandée : Comptage mots-clés) ----------------------------- 
+
 Write-Host "Verification Winget..." -ForegroundColor Cyan
 
 $wingetUpdates = winget upgrade --accept-source-agreements --accept-package-agreements 2>$null
@@ -391,7 +415,7 @@ else {
     Write-Host "Winget : 0 mise(s) à jour disponible(s)" -ForegroundColor Green
 }
 
-# 3. Vérification Microsoft Store
+#----------------------------- 3. Vérification Microsoft Store ----------------------------- 
 Write-Host "Verification Microsoft Store..." -ForegroundColor Cyan
 
 $storeResult = winget upgrade --source msstore 2>$null
@@ -411,7 +435,7 @@ else {
 #                            Sécurité Finale (Agents)
 #############################################################################
 
-# SentinelOne
+#----------------------------- SentinelOne ----------------------------- 
 $S1BasePath = "C:\Program Files\SentinelOne"
 try {
     $S1FullFolder = Get-ChildItem -Path $S1BasePath -Filter "Sentinel Agent *" -Directory -ErrorAction Stop | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName -First 1
@@ -436,7 +460,7 @@ catch {
 
 "---" | Out-File $LogFile -Append
 
-# Sekoia & Sysmon
+#----------------------------- Sekoia & Sysmon ----------------------------- 
 function Check-SecService {
     param($Name, $Display)
     try {

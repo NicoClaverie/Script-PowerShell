@@ -1,9 +1,8 @@
 #######################################################################
 #                                                                     #
-#    Script de Validation de Deploiement WDS (Version Finale)         #
+#    Script de Validation de Deploiement WDS (Version Finale 2)       #
 #                                                                     #
 #    Auteur : Nicolas CLAVERIE                                        #
-#    Modifié : WU Avancé + Winget Simplifié                           #
 #                                                                     #
 #######################################################################
 
@@ -24,6 +23,39 @@ if (!(Test-Path "C:\Temp")) { New-Item -ItemType Directory -Path "C:\Temp" | Out
 "=======================================================" | Out-File $LogFile
 "Deploiement WDS verifie le $DateExecution" | Out-File $LogFile -Append
 "Hostname : $env:COMPUTERNAME" | Out-File $LogFile -Append
+
+
+#############################################################################
+#                            Partie Active Directory
+#############################################################################
+
+$ADCredentials = Get-Credential -Message "Veuillez entrer vos identifiants de domaine Active Directory"
+$DomainPath = "LDAP://TER_SUD.local" 
+
+try {
+    $DomainEntry = New-Object System.DirectoryServices.DirectoryEntry `
+        -ArgumentList $DomainPath, $ADCredentials.UserName, $ADCredentials.GetNetworkCredential().Password
+    $ADSI = New-Object System.DirectoryServices.DirectorySearcher
+    $ADSI.SearchRoot = $DomainEntry
+    $ADSI.Filter = "(&(objectCategory=computer)(cn=$env:COMPUTERNAME))"
+    $SearchResult = $ADSI.FindOne()
+
+    if ($SearchResult) {
+        Write-Host "Chemin AD trouve : $($SearchResult.Path)" -ForegroundColor Green
+        $SearchResult.Path | Out-File $LogFile -Append
+    }
+    else {
+        Write-Host "ERREUR : Ordinateur introuvable dans l'AD." -ForegroundColor Red
+        "ERREUR: Ordinateur introuvable dans l'AD" | Out-File $LogFile -Append
+    }
+}
+catch {
+    Write-Host "Erreur connexion AD : $($_.Exception.Message)" -ForegroundColor Red
+    "ERREUR CRITIQUE AD : $($_.Exception.Message)" | Out-File $LogFile -Append
+}
+"Verifie par $($ADCredentials.UserName)" | Out-File $LogFile -Append
+"=======================================================" | Out-File $LogFile -Append
+
 
 #############################################################################
 #                            Partie BIOS (Lenovo)
@@ -87,36 +119,9 @@ catch {
 
 "---" | Out-File $LogFile -Append
 
-#############################################################################
-#                            Partie Active Directory
-#############################################################################
 
-$ADCredentials = Get-Credential -Message "Veuillez entrer vos identifiants de domaine Active Directory"
-$DomainPath = "LDAP://TER_SUD.local" 
 
-try {
-    $DomainEntry = New-Object System.DirectoryServices.DirectoryEntry `
-        -ArgumentList $DomainPath, $ADCredentials.UserName, $ADCredentials.GetNetworkCredential().Password
-    $ADSI = New-Object System.DirectoryServices.DirectorySearcher
-    $ADSI.SearchRoot = $DomainEntry
-    $ADSI.Filter = "(&(objectCategory=computer)(cn=$env:COMPUTERNAME))"
-    $SearchResult = $ADSI.FindOne()
 
-    if ($SearchResult) {
-        Write-Host "Chemin AD trouve : $($SearchResult.Path)" -ForegroundColor Green
-        $SearchResult.Path | Out-File $LogFile -Append
-    }
-    else {
-        Write-Host "ERREUR : Ordinateur introuvable dans l'AD." -ForegroundColor Red
-        "ERREUR: Ordinateur introuvable dans l'AD" | Out-File $LogFile -Append
-    }
-}
-catch {
-    Write-Host "Erreur connexion AD : $($_.Exception.Message)" -ForegroundColor Red
-    "ERREUR CRITIQUE AD : $($_.Exception.Message)" | Out-File $LogFile -Append
-}
-"Verifie par $($ADCredentials.UserName)" | Out-File $LogFile -Append
-"=======================================================" | Out-File $LogFile -Append
 
 # --- Vérifications Fichiers de base ---
 
@@ -133,6 +138,9 @@ if (Test-Path "C:\Windows\Certificat\_.groupe-terresdusud.fr.crt") {
 else {
     "Certificat GLPI : ABSENT" | Out-File $LogFile -Append; Write-Host "Certificat GLPI : ERREUR" -ForegroundColor Red
 }
+
+
+
 
 #############################################################################
 #                            Partie Imprimantes
@@ -194,14 +202,14 @@ try {
     $CRDFolder = Get-ChildItem -Path $CRDBase -Directory -ErrorAction Stop | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName -First 1
     if ($CRDFolder -and (Test-Path "$CRDFolder\remoting_host.exe")) {
         $Ver = (Get-Item "$CRDFolder\remoting_host.exe").VersionInfo.FileVersion
-        "Statut CRD : OK (v$Ver)" | Out-File $LogFile -Append
-        Write-Host "Verification CRD : OK ($Ver)" -ForegroundColor Green
+        "Statut Chrome Remote Desktop : OK (v$Ver)" | Out-File $LogFile -Append
+        Write-Host "Verification Chrome Remote Desktop : OK ($Ver)" -ForegroundColor Green
     }
     else { throw "EXE introuvable" }
 }
 catch {
-    "Statut CRD : ABSENT/ERREUR" | Out-File $LogFile -Append
-    Write-Host "Verification CRD : ERREUR" -ForegroundColor Red
+    "Statut Chrome Remote Desktop : ABSENT/ERREUR" | Out-File $LogFile -Append
+    Write-Host "Verification Chrome Remote Desktop : ERREUR" -ForegroundColor Red
 }
 "---" | Out-File $LogFile -Append
 
@@ -288,8 +296,27 @@ if ($shadow) {
 else {
     "Protection systeme C: : INACTIVE/VIDE" | Out-File $LogFile -Append; Write-Host "Protection systeme C: : ATTENTION" -ForegroundColor Yellow
 }
-$vssLine = (vssadmin list shadowstorage | Select-String "Espace maximal" | Select-Object -First 1)
-if ($vssLine) { "Quota VSS : $($vssLine.Line.Trim())" | Out-File $LogFile -Append }
+$line = vssadmin list shadowstorage | Select-String "Espace maximal" | Select-Object -First 1
+
+# Extraction propre du pourcentage "nombre%"
+if ($line -match '(\d+)\s*%') {
+    $percent = [int]$matches[1]
+}
+else {
+    $percent = $null
+}
+
+# Affichage avec couleur
+if ($percent -eq 5) {
+    "Espace maximal = $percent%" | Out-File $LogFile -Append; Write-Host "Espace maximal = $percent%" -ForegroundColor Green
+}
+else {
+    "Espace maximal = $percent%" | Out-File $LogFile -Append; Write-Host "Espace maximal = $percent%" -ForegroundColor Yellow
+}
+
+
+#$vssLine = (vssadmin list shadowstorage | Select-String "Espace maximal" | Select-Object -First 1)
+#if ($vssLine) { "Quota VSS : $($vssLine.Line.Trim())" | Out-File $LogFile -Append }
 
 "---" | Out-File $LogFile -Append
 
@@ -430,6 +457,46 @@ Check-SecService -Name "SEKOIAEndpointAgent" -Display "SEKOIA"
 Check-SecService -Name "Sysmon64" -Display "Sysmon"
 
 "---" | Out-File $LogFile -Append
+
+#############################################################################
+#                           Export fichier de log sur lecteur réseau
+#############################################################################
+
+
+$NetworkPath = "G:\Mon Drive\temp"
+$DriveName = "LogDrive"
+
+try {
+    # Montre du lecteur réseau
+    $psDrive = New-PSDrive -Name $DriveName -PSProvider FileSystem -Root $NetworkPath -Credential $ADCredentials -ErrorAction Stop
+
+    # Création du nom en fonction de l’ordi + date
+    $ComputerName = $env:COMPUTERNAME
+    $Date = Get-Date -Format "yyyy-MM-dd"
+    $RemoteFileName = "$ComputerName-$Date.log"
+
+    # Chemin distant final
+    $RemotePath = "$($psDrive.Root)\$RemoteFileName"
+
+    # ➜ COPIE DU FICHIER LOCAL VERS LE PARTAGE
+    Copy-Item -Path $LogFile -Destination $RemotePath -Force -ErrorAction Stop
+
+    Write-Host "✔ Fichier transféré vers $RemotePath" -ForegroundColor Green
+}
+catch {
+    $errorMessage = $_.Exception.Message
+
+    if ($errorMessage -match "Access is denied") {
+        Write-Host "❌ Accès refusé au partage réseau." -ForegroundColor Red
+    }
+    else {
+        Write-Host "❌ Erreur : $errorMessage" -ForegroundColor Red
+    }
+}
+finally {
+    Remove-PSDrive -Name $DriveName -Force -ErrorAction SilentlyContinue
+}
+
 
 #############################################################################
 #                            Impression

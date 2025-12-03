@@ -506,16 +506,16 @@ try {
     # ➜ COPIE DU FICHIER LOCAL VERS LE PARTAGE
     Copy-Item -Path $LogFile -Destination $RemotePath -Force -ErrorAction Stop
 
-    Write-Host "✔ Fichier transféré vers $RemotePath" -ForegroundColor Green
+    Write-Host "Fichier transféré vers $RemotePath" -ForegroundColor Green
 }
 catch {
     $errorMessage = $_.Exception.Message
 
     if ($errorMessage -match "Access is denied") {
-        Write-Host "❌ Accès refusé au partage réseau." -ForegroundColor Red
+        Write-Host "Accès refusé au partage réseau." -ForegroundColor Red
     }
     else {
-        Write-Host "❌ Erreur : $errorMessage" -ForegroundColor Red
+        Write-Host "Erreur : $errorMessage" -ForegroundColor Red
     }
 }
 finally {

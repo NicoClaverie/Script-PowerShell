@@ -17,12 +17,13 @@ if (-not $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administ
 # --- Initialisation du Log ---
 $LogFile = "C:\Temp\Validation_WDS_Simple.log"
 $DateExecution = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+$NumInventaire = Read-Host "Entrez numero d'inventaire"
 
 if (!(Test-Path "C:\Temp")) { New-Item -ItemType Directory -Path "C:\Temp" | Out-Null }
 
 "=======================================================" | Out-File $LogFile
 "Deploiement WDS verifie le $DateExecution" | Out-File $LogFile -Append
-"Hostname : $env:COMPUTERNAME" | Out-File $LogFile -Append
+"Hostname : $env:COMPUTERNAME / Numero d'inventaire : $NumInventaire" | Out-File $LogFile -Append
 
 
 #############################################################################
@@ -497,7 +498,7 @@ try {
     # Création du nom en fonction de l’ordi + date
     $ComputerName = $env:COMPUTERNAME
     $Date = Get-Date -Format "yyyy-MM-dd"
-    $RemoteFileName = "$ComputerName-$Date.log"
+    $RemoteFileName = "$NumInventaire-$ComputerName-$Date.txt"
 
     # Chemin distant final
     $RemotePath = "$($psDrive.Root)\$RemoteFileName"

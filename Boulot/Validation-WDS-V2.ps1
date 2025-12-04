@@ -6,7 +6,8 @@
 #                                                                     #
 #######################################################################
 
-# --- Vérification des droits Administrateur ---
+
+# --- Verification des droits Administrateur ---
 $currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
 if (-not $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
     $arguments = "& '" + $myinvocation.mycommand.definition + "'"
@@ -69,7 +70,7 @@ function Get-LenovoSettingValue {
     param ($Name, $Collection)
     $setting = $Collection | Where-Object { $_.CurrentSetting -like "$Name,*" } | Select-Object -First 1
     if ($setting) { return ($setting.CurrentSetting -split ",", 2)[1] }
-    return "Non trouvé"
+    return "Non trouve"
 }
 
 try {
@@ -89,14 +90,15 @@ try {
     }
     "Bios Password : $statusMdp" | Out-File $LogFile -Append
 
-    # 2. Autres réglages
+    # 2. Autres reglages
     $biosSettings = Get-WmiObject -Namespace root\wmi -Class Lenovo_BiosSetting -ErrorAction Stop
     $CheckList = @(
         @{Name = "BIOSPasswordAtBootDeviceList"; Label = "Password at Boot Device List" },
         @{Name = "AbsolutePersistenceModuleActivation"; Label = "Absolute Persistence Module" },
         @{Name = "SecureBoot"; Label = "Secure Boot" },
         @{Name = "WakeOnLAN*"; Label = "Wake On LAN" },
-        @{Name = "StartupOptionKeys"; Label = "Option Key Display" }
+        @{Name = "StartupOptionKeys"; Label = "Option Key Display" },
+        @{Name = "BootOrder*"; Label = "Ordre de demarrage" }
     )
 
     foreach ($check in $CheckList) {
@@ -121,7 +123,7 @@ catch {
 "---" | Out-File $LogFile -Append
 
 #############################################################################
-#                            Vérifications Fichiers de base
+#                            Verifications Fichiers de base
 #############################################################################
 
 if (Test-Path "C:\DefaultApps\AppDefault.xml") {
@@ -166,7 +168,7 @@ foreach ($d in $Drivers) {
 
 "---" | Out-File $LogFile -Append
 
-# ----------------------------- Fonction générique pour vérifier un EXE -----------------------------
+# ----------------------------- Fonction generique pour verifier un EXE -----------------------------
 function Check-App {
     param($Name, $Path)
     if (Test-Path $Path) {
@@ -252,7 +254,7 @@ Check-App -Name "PDFsam Basic" -Path "C:\Program Files\PDFsam Basic\pdfsam.exe"
 "---" | Out-File $LogFile -Append
 
 #############################################################################
-#                            Vérifications Système
+#                            Verifications Systeme
 #############################################################################
 
 #----------------------------- Activation du RDP ----------------------------- 
@@ -261,12 +263,12 @@ $rdpKey = "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server"
 $rdpValue = Get-ItemProperty -Path $rdpKey -Name fDenyTSConnections
 
 if ($rdpValue.fDenyTSConnections -eq 0) {
-    "RDP est ACTIVÉ" | Out-File $LogFile -Append
-    Write-Host "RDP est ACTIVÉ" -ForegroundColor Green
+    "RDP est ACTIVe" | Out-File $LogFile -Append
+    Write-Host "RDP est ACTIVe" -ForegroundColor Green
 }
 else {
-    "RDP est DÉSACTIVÉ" | Out-File $LogFile -Append
-    Write-Host "RDP est DÉSACTIVÉ" -ForegroundColor Yellow
+    "RDP est DeSACTIVe" | Out-File $LogFile -Append
+    Write-Host "RDP est DeSACTIVe" -ForegroundColor Yellow
 }
 
 "---" | Out-File $LogFile -Append
@@ -343,7 +345,7 @@ else {
 
 "---" | Out-File $LogFile -Append
 
-#----------------------------- 1. Windows Update (Méthode Avancée : Sécurité vs Office) ----------------------------- 
+#----------------------------- 1. Windows Update (Methode Avancee : Securite vs Office) ----------------------------- 
 
 Write-Host "Analyse Windows Update (OS vs Office 2016 vs Antivirus)..." -ForegroundColor Cyan
 try {
@@ -362,7 +364,7 @@ try {
 
     # Logique d'affichage
     if ($SecuUpdates.Count -gt 0) {
-        "Windows Update : ECHEC. $($SecuUpdates.Count) patchs SÉCURITÉ SYSTEME manquants." | Out-File $LogFile -Append
+        "Windows Update : ECHEC. $($SecuUpdates.Count) patchs SeCURITe SYSTEME manquants." | Out-File $LogFile -Append
         Write-Host "Windows Update : ALERTE ROUGE ($($SecuUpdates.Count) patchs OS manquants)" -ForegroundColor Red
         foreach ($u in $SecuUpdates) { 
             " -> MANQUE OS : $($u.Title)" | Out-File $LogFile -Append
@@ -388,8 +390,8 @@ try {
 
     # Reboot Pending
     if ((New-Object -ComObject Microsoft.Update.SystemInfo).RebootRequired) {
-        "Windows Update : Redémarrage en attente : OUI" | Out-File $LogFile -Append
-        Write-Host "Windows Update : Redémarrage REQUIS" -ForegroundColor Red
+        "Windows Update : Redemarrage en attente : OUI" | Out-File $LogFile -Append
+        Write-Host "Windows Update : Redemarrage REQUIS" -ForegroundColor Red
     }
 }
 catch {
@@ -397,43 +399,43 @@ catch {
 }
 "---" | Out-File $LogFile -Append
 
-#----------------------------- 2. Vérification WINGET (Méthode demandée : Comptage mots-clés) ----------------------------- 
+#----------------------------- 2. Verification WINGET (Methode demandee : Comptage mots-cles) ----------------------------- 
 
 Write-Host "Verification Winget..." -ForegroundColor Cyan
 
 $wingetUpdates = winget upgrade --accept-source-agreements --accept-package-agreements 2>$null
 $updateCount = ($wingetUpdates | Select-String "Disponi" -Context 0, 1).Count
-# fallback si format différent (Anglais ou autre)
+# fallback si format different (Anglais ou autre)
 if ($updateCount -eq 0) {
-    $updateCount = ($wingetUpdates | Select-String "Upgrade available|mis à jour").Count
+    $updateCount = ($wingetUpdates | Select-String "Upgrade available|mis a jour").Count
 }
 
-"Applications (Winget) : $updateCount mise(s) à jour disponible(s)" | Out-File $LogFile -Append
+"Applications (Winget) : $updateCount mise(s) a jour disponible(s)" | Out-File $LogFile -Append
 if ($updateCount -gt 0) {
-    Write-Host "Winget : $updateCount mise(s) à jour disponible(s)" -ForegroundColor Yellow
+    Write-Host "Winget : $updateCount mise(s) a jour disponible(s)" -ForegroundColor Yellow
 }
 else {
-    Write-Host "Winget : 0 mise(s) à jour disponible(s)" -ForegroundColor Green
+    Write-Host "Winget : 0 mise(s) a jour disponible(s)" -ForegroundColor Green
 }
 
-#----------------------------- 3. Vérification Microsoft Store ----------------------------- 
+#----------------------------- 3. Verification Microsoft Store ----------------------------- 
 Write-Host "Verification Microsoft Store..." -ForegroundColor Cyan
 
 $storeResult = winget upgrade --source msstore 2>$null
-$storeCount = ($storeResult | Select-String "Disponi|available|mis à jour").Count
+$storeCount = ($storeResult | Select-String "Disponi|available|mis a jour").Count
 
-"Microsoft Store : $storeCount mise(s) à jour disponible(s)" | Out-File $LogFile -Append
+"Microsoft Store : $storeCount mise(s) a jour disponible(s)" | Out-File $LogFile -Append
 if ($storeCount -gt 0) {
-    Write-Host "Microsoft Store : $storeCount mise(s) à jour disponible(s)" -ForegroundColor Yellow
+    Write-Host "Microsoft Store : $storeCount mise(s) a jour disponible(s)" -ForegroundColor Yellow
 }
 else {
-    Write-Host "Microsoft Store : 0 mise(s) à jour disponible(s)" -ForegroundColor Green
+    Write-Host "Microsoft Store : 0 mise(s) a jour disponible(s)" -ForegroundColor Green
 }
 
 "---" | Out-File $LogFile -Append
 
 #############################################################################
-#                            Sécurité Finale (Agents)
+#                            Securite Finale (Agents)
 #############################################################################
 
 #----------------------------- SentinelOne ----------------------------- 
@@ -484,7 +486,7 @@ Check-SecService -Name "Sysmon64" -Display "Sysmon"
 "---" | Out-File $LogFile -Append
 
 #############################################################################
-#                           Export fichier de log sur lecteur réseau
+#                           Export fichier de log sur lecteur reseau
 #############################################################################
 
 
@@ -492,10 +494,10 @@ $NetworkPath = "G:\Mon Drive\temp"
 $DriveName = "LogDrive"
 
 try {
-    # Montre du lecteur réseau
+    # Montre du lecteur reseau
     $psDrive = New-PSDrive -Name $DriveName -PSProvider FileSystem -Root $NetworkPath -Credential $ADCredentials -ErrorAction Stop
 
-    # Création du nom en fonction de l’ordi + date
+    # Creation du nom en fonction de l’ordi + date
     $ComputerName = $env:COMPUTERNAME
     $Date = Get-Date -Format "yyyy-MM-dd"
     $RemoteFileName = "$NumInventaire-$ComputerName-$Date.txt"
@@ -506,13 +508,13 @@ try {
     # ➜ COPIE DU FICHIER LOCAL VERS LE PARTAGE
     Copy-Item -Path $LogFile -Destination $RemotePath -Force -ErrorAction Stop
 
-    Write-Host "Fichier transféré vers $RemotePath" -ForegroundColor Green
+    Write-Host "Fichier transfere vers $RemotePath" -ForegroundColor Green
 }
 catch {
     $errorMessage = $_.Exception.Message
 
     if ($errorMessage -match "Access is denied") {
-        Write-Host "Accès refusé au partage réseau." -ForegroundColor Red
+        Write-Host "Acces refuse au partage reseau." -ForegroundColor Red
     }
     else {
         Write-Host "Erreur : $errorMessage" -ForegroundColor Red

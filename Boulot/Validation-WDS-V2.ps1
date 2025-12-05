@@ -534,9 +534,28 @@ function Invoke-RawPrint {
     $PrinterPort = 9100
     $WrapWidth = 78
     
+    # --- Code PCL pour Duplex (Recto Verso) ---
+    # ESC (caractère ASCII 27)
+    $ESC = [char]27
+    
+    # Commande PCL pour activer le recto verso (Long-Edge Binding - reliure bord long)
+    # [ESC]&l1S
+    $DuplexCommand = "$ESC&l1S" # Utilisez $ESC&l2S pour Short-Edge Binding si vous préférez l'autre sens
+    
+    # Ajoutez un saut de page (Form Feed - ASCII 12) à la fin du flux pour éjecter la dernière page
+    $FormFeed = [char]12
+    # -------------------------------------------
+
     if (Test-Path $LogFile) {
         Write-Host "Preparation impression..."
+        
+        # 1. Préfixer le contenu avec la commande PCL
+        $PCLContent = $DuplexCommand + "`r`n"
         $FormattedContent = New-Object System.Text.StringBuilder
+        [void]$FormattedContent.Append($PCLContent)
+        
+        # ... (votre code existant pour le WrapWidth et la mise en forme du texte) ...
+        
         foreach ($Line in (Get-Content $LogFile -Encoding ASCII)) {
             $CurrentLine = $Line
             while ($CurrentLine.Length -gt $WrapWidth) {
@@ -545,13 +564,19 @@ function Invoke-RawPrint {
             }
             [void]$FormattedContent.Append($CurrentLine + "`r`n")
         }
-        $Bytes = [System.Text.Encoding]::ASCII.GetBytes($FormattedContent.ToString() + "`r`n") 
+        
+        # 2. Ajouter un saut de page pour terminer l'impression
+        [void]$FormattedContent.Append($FormFeed)
+
+        # 3. Encoder et envoyer le tout
+        $Bytes = [System.Text.Encoding]::ASCII.GetBytes($FormattedContent.ToString()) 
+        
         try {
             $TCP = New-Object System.Net.Sockets.TcpClient
             $TCP.Connect($PrinterIP, $PrinterPort)
             $Stream = $TCP.GetStream()
             $Stream.Write($Bytes, 0, $Bytes.Length)
-            Write-Host "Impression OK" -ForegroundColor Green
+            Write-Host "Impression OK (avec tentative Duplex PCL)" -ForegroundColor Green
             $Stream.Dispose(); $TCP.Close()
         }
         catch { Write-Error "Erreur impression : $($_.Exception.Message)" }

@@ -403,21 +403,32 @@ catch {
 
 Write-Host "Verification Winget..." -ForegroundColor Cyan
 
-$wingetUpdates = winget upgrade --accept-source-agreements --accept-package-agreements 2>$null
-$updateCount = ($wingetUpdates | Select-String "Disponi" -Context 0, 1).Count
-# fallback si format different (Anglais ou autre)
-if ($updateCount -eq 0) {
-    $updateCount = ($wingetUpdates | Select-String "Upgrade available|mis a jour").Count
-}
+# Important : On s'assure que PowerShell lit bien les accents et caractères spéciaux de winget
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+# On lance la commande winget
+# --include-unknown est utile pour voir toutes les apps même si winget a un doute sur la version
+$wingetUpdates = winget upgrade --include-unknown --accept-source-agreements --accept-package-agreements 2>$null
+
+# LOGIQUE CORRIGÉE :
+# On cherche les lignes qui contiennent la source (winget ou msstore) à la fin.
+# Cela exclut automatiquement les en-têtes et les phrases de résumé.
+$validUpdates = $wingetUpdates | Select-String -Pattern "\s(winget|msstore)$"
+
+$updateCount = $validUpdates.Count
 
 "Applications (Winget) : $updateCount mise(s) a jour disponible(s)" | Out-File $LogFile -Append
+
 if ($updateCount -gt 0) {
+    # On affiche le nombre
     Write-Host "Winget : $updateCount mise(s) a jour disponible(s)" -ForegroundColor Yellow
+    
+    # Optionnel : Afficher la liste des apps trouvées pour débugger ou informer
+    # $validUpdates | ForEach-Object { Write-Host " - $_" -ForegroundColor DarkGray }
 }
 else {
     Write-Host "Winget : 0 mise(s) a jour disponible(s)" -ForegroundColor Green
 }
-
 #----------------------------- 3. Verification Microsoft Store ----------------------------- 
 Write-Host "Verification Microsoft Store..." -ForegroundColor Cyan
 
@@ -434,34 +445,117 @@ else {
 
 "---" | Out-File $LogFile -Append
 
+
+#############################################################################
+#                   Verification des Pilotes (Gestionnaire de periph.)
+#############################################################################
+"--- Verification de l'etat des pilotes ---" | Out-File $LogFile -Append
+Write-Host "--- Verification des peripheriques en erreur ---" -ForegroundColor Cyan
+
+# Recuperation des peripheriques ayant un code d'erreur (non nul)
+$BadDevices = Get-CimInstance Win32_PnPEntity | Where-Object { $_.ConfigManagerErrorCode -ne 0 }
+
+if ($BadDevices) {
+    $Count = $BadDevices.Count
+    "ALERTE : $Count peripherique(s) en erreur detecte(s)." | Out-File $LogFile -Append
+    Write-Host "ALERTE : $Count pilote(s) en anomalie ou manquant(s) !" -ForegroundColor Red
+    
+    foreach ($dev in $BadDevices) {
+        $msg = " -> Periph : $($dev.Name) [Code: $($dev.ConfigManagerErrorCode)]"
+        $msg | Out-File $LogFile -Append
+        Write-Host $msg -ForegroundColor Yellow
+    }
+}
+else {
+    "Tous les pilotes sont correctement installes (OK)." | Out-File $LogFile -Append
+    Write-Host "Gestionnaire de peripheriques : OK (Aucune erreur)" -ForegroundColor Green
+}
+"---" | Out-File $LogFile -Append
+
 #############################################################################
 #                            Securite Finale (Agents)
 #############################################################################
 
 #----------------------------- SentinelOne ----------------------------- 
+
+# Chemins et noms de service SentinelOne
 $S1BasePath = "C:\Program Files\SentinelOne"
+# Motif de recherche du dossier de l'agent (utilise un joker pour la version)
+$S1FolderPattern = "Sentinel Agent *" 
+$S1ServiceName = "SentinelAgent" # Nom standard du service
+$S1VersionExe = "SentinelUI.exe" # L'executable contenant les metadonnees de version
+
+$S1DeploymentStatus = "ERREUR"
+
+# 1. Recherche dynamique du dossier de version
 try {
-    $S1FullFolder = Get-ChildItem -Path $S1BasePath -Filter "Sentinel Agent *" -Directory -ErrorAction Stop | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName -First 1
-    if ($S1FullFolder -and (Test-Path "$S1FullFolder\SentinelUI.exe")) {
-        $Ver = (Get-Item "$S1FullFolder\SentinelUI.exe").VersionInfo.FileVersion
-        "SentinelOne : Fichiers OK (v$Ver)" | Out-File $LogFile -Append
-        Write-Host "SentinelOne : Fichiers OK (v$Ver)" -ForegroundColor Green
+    # Trouver le chemin complet du dossier qui correspond au motif. 
+    # Select -Last 1 garantit que nous prenons le dossier s'il en existe plusieurs (la version la plus recente).
+    $S1FullFolder = Get-ChildItem -Path $S1BasePath -Filter $S1FolderPattern -Directory -ErrorAction Stop | 
+        Sort-Object -Property LastWriteTime -Descending | 
+        Select-Object -ExpandProperty FullName -First 1
+    
+    if (-not $S1FullFolder) {
+        throw "Dossier 'Sentinel Agent *' introuvable dans $S1BasePath."
+    }
+    
+    $S1ExePath = Join-Path -Path $S1FullFolder -ChildPath $S1VersionExe
+    
+    # 2. Verification de la presence de l'executable
+    if (-not (Test-Path -Path $S1ExePath)) {
+        throw "Executable '$S1VersionExe' introuvable dans le dossier versionne trouve ($S1FullFolder)."
+    }
+
+    # Presence OK
+    "Statut SentinelOne Fichiers : OK" | Out-File $LogFile -Append
+    Write-Host "Verification SentinelOne Fichiers : OK" -ForegroundColor Green
+    
+    # 3. Tenter d'obtenir la version
+    try {
+        $VersionInfo = Get-Item $S1ExePath
+        $Version = $VersionInfo.VersionInfo.FileVersion
         
-        $Svc = Get-Service -Name "SentinelAgent" -ErrorAction Stop
-        if ($Svc.Status -eq "Running") {
-            "SentinelOne Service : DEMARRE" | Out-File $LogFile -Append; Write-Host "SentinelOne Service : OK" -ForegroundColor Green
-        }
-        else {
-            "SentinelOne Service : ARRETE" | Out-File $LogFile -Append; Write-Host "SentinelOne Service : ARRETE" -ForegroundColor Yellow
+        if ($Version) {
+            "Version SentinelOne : $Version" | Out-File $LogFile -Append
+            Write-Host "Version SentinelOne detectee : $Version"
+        } else {
+            "Version SentinelOne : Non detectee. (Fichier trouve mais version manquante)" | Out-File $LogFile -Append
+            Write-Host "Version SentinelOne : ATTENTION, version non detectee." -ForegroundColor Yellow
         }
     }
-    else { throw "Fichiers introuvables" }
-}
+    catch {
+        "Erreur lors de la lecture de la version de $S1VersionExe. Erreur: $($_.Exception.Message)" | Out-File $LogFile -Append
+        Write-Host "Erreur lors de la lecture de la version du fichier S1." -ForegroundColor Yellow
+    }
+    
+    # 4. Verification du Service
+    try {
+        $Service = Get-Service -Name $S1ServiceName -ErrorAction Stop
+        
+        if ($Service.Status -eq "Running") {
+            "Statut Service SentinelOne : DEMARRE" | Out-File $LogFile -Append
+            Write-Host "Statut Service SentinelOne : OK (Demarre)" -ForegroundColor Green
+            $S1DeploymentStatus = "SUCCES" # Tout est parfait
+        } else {
+            "Statut Service SentinelOne : PRESENT mais ARRETE (Statut: $($Service.Status))" | Out-File $LogFile -Append
+            Write-Host "Statut Service SentinelOne : ATTENTION (Arrete)" -ForegroundColor Yellow
+            $S1DeploymentStatus = "ATTENTION"
+        }
+    }
+    catch {
+        "Statut Service SentinelOne : ABSENT (Recherche: $S1ServiceName)" | Out-File $LogFile -Append
+        Write-Host "Statut Service SentinelOne : ERREUR (Service non trouve)" -ForegroundColor Red
+    }
+    
+} 
 catch {
-    "SentinelOne : ABSENT/ERREUR" | Out-File $LogFile -Append; Write-Host "SentinelOne : ERREUR" -ForegroundColor Red
+    # Capture toutes les erreurs (dossier introuvable, executable introuvable, etc.)
+    "Statut SentinelOne Fichiers : ABSENT. ERREUR DE DEPLOIEMENT MAJEURE. Erreur: $($_.Exception.Message)" | Out-File $LogFile -Append
+    Write-Host "Verification SentinelOne Fichiers : ERREUR, l'agent n'a pas ete trouve." -ForegroundColor Red
 }
 
 "---" | Out-File $LogFile -Append
+
 
 #----------------------------- Sekoia & Sysmon ----------------------------- 
 function Check-SecService {
@@ -490,7 +584,7 @@ Check-SecService -Name "Sysmon64" -Display "Sysmon"
 #############################################################################
 
 
-$NetworkPath = "G:\Mon Drive\temp"
+$NetworkPath = "\\TDSCLAiRAC\P\FICHES PREPARATION PC"
 $DriveName = "LogDrive"
 
 try {

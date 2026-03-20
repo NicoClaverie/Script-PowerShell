@@ -5,6 +5,17 @@
     Auteur : Gemini 3
 #>
 
+# Vérifie si la session actuelle a les droits d'administrateur
+$currentUser = New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())
+if (-not $currentUser.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)) {
+    # Si non, on relance le script actuel en demandant l'élévation
+    $arguments = "& '" + $myinvocation.mycommand.definition + "'"
+    Start-Process powershell.exe -Verb RunAs -ArgumentList $arguments
+    # On quitte la session non-administrateur
+    exit
+}
+
+
 $genericDriversConfig = @(
     @{ Path = "C:\pilotes\dock"; Name = "Dock Lenvo" },
     @{ Path = "C:\pilotes\ThinkVision T24i-30"; Name = "Ecran Lenovo ThinkVision T24i-30" },

@@ -141,33 +141,62 @@ else {
 }
 
 #############################################################################
-#                            Partie Imprimantes
+#                            Partie Imprimantes (Drivers)
 #############################################################################
+"--- Verification des Pilotes Systemes ---" | Out-File $LogFile -Append
+Write-Host "--- Verification des Pilotes Imprimantes (Systeme) ---" -ForegroundColor Cyan
 
-"---" | Out-File $LogFile -Append
+# 1. Ta liste de référence (Data que tu m'as fournie)
+$ReferenceDrivers = @'
+"Name";"DriverVersion"
+"Canon Generic Plus PCL6";"563336500477952"
+"HP Universal Printing PCL 6";"17171455343159019"
+"Lexmark Universal v2 XL";"844424930263040"
+"Xerox Global Print Driver PCL";"1561626606764556288"
+"Xerox Global Print Driver PCL6";"14365076295421788160"
+"Xerox Global Print Driver PS";"1561626606764556288"
+"Xerox GPD PCL6 V4.0.548.8.0";"1561626606764556288"
+"Xerox GPD PCL6 V5.703.12.0";"1605256946141626368"
+'@ | ConvertFrom-Csv -Delimiter ";"
 
-$Drivers = @(
-    @{Path = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver\CNP60MA64.INF"; Name = "CANON" },
-    @{Path = "C:\Imprimantes\HP\pcl6-x64-6.9.0.24630"; Name = "HP" },
-    @{Path = "C:\Imprimantes\LEXMARK\Lexmark_Universal_v2_XL_3_0_2\Drivers\Print\GDI"; Name = "LEXMARK" },
-    @{Path = "C:\Imprimantes\XEROX\UNIV_5.1035.2.0_PCL6_x64_Driver.inf"; Name = "XEROX" }
-)
+# 2. Récupération des drivers réellement installés sur la machine
+$LocalDrivers = Get-PrinterDriver | Select-Object Name, DriverVersion
 
-foreach ($d in $Drivers) {
-    if (Test-Path $d.Path) {
-        "Pilote $($d.Name) : OK" | Out-File $LogFile -Append; Write-Host "Drivers $($d.Name) : OK" -ForegroundColor Green
+$GlobalPrinterOK = $true
+
+foreach ($Ref in $ReferenceDrivers) {
+    # On cherche si le driver est présent
+    $Match = $LocalDrivers | Where-Object { $_.Name -eq $Ref.Name }
+
+    if ($null -eq $Match) {
+        $msg = "Pilote MANQUANT : $($Ref.Name)"
+        $msg | Out-File $LogFile -Append
+        Write-Host "[ERREUR] $msg" -ForegroundColor Red
+        $GlobalPrinterOK = $false
+    }
+    elseif ($Match.DriverVersion -ne $Ref.DriverVersion) {
+        $msg = "Pilote VERSION KO : $($Ref.Name) (Attendu: $($Ref.DriverVersion) | Trouve: $($Match.DriverVersion))"
+        $msg | Out-File $LogFile -Append
+        Write-Host "[ATTENTION] $msg" -ForegroundColor Yellow
+        $GlobalPrinterOK = $false
     }
     else {
-        "Pilote $($d.Name) : ABSENT" | Out-File $LogFile -Append; Write-Host "Drivers $($d.Name) : ERREUR" -ForegroundColor Red
+        # Optionnel : décommenter la ligne suivante si tu veux voir les "OK" dans le log
+        # "Pilote $($Ref.Name) : OK" | Out-File $LogFile -Append
     }
 }
+
+if ($GlobalPrinterOK) {
+    "Tous les pilotes d'impression sont conformes : OK" | Out-File $LogFile -Append
+    Write-Host "Pilotes d'impression : TOUS CONFORMES" -ForegroundColor Green
+}
+
+"---" | Out-File $LogFile -Append
 
 #############################################################################
 #                            Partie Logiciels
 #############################################################################
-
-"---" | Out-File $LogFile -Append
-
+Write-Host "--- Verification des Logiciels ---" -ForegroundColor Cyan
 # ----------------------------- Fonction generique pour verifier un EXE -----------------------------
 function Check-App {
     param($Name, $Path)

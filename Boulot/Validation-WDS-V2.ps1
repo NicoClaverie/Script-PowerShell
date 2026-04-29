@@ -260,24 +260,51 @@ if (Test-Path "C:\Program Files (x86)\ManageEngine\UEMS_Agent") {
     try {
         $Svc = Get-Service -Name "ManageEngine UEMS - Agent" -ErrorAction Stop
         if ($Svc.Status -eq "Running") {
-            "Statut ManageEngine : OK (Service Demarre)" | Out-File $LogFile -Append
-            Write-Host "ManageEngine : OK" -ForegroundColor Green
+            "Statut Manage Engine : OK (Service Demarre)" | Out-File $LogFile -Append
+            Write-Host "Manage Engine : OK" -ForegroundColor Green
         }
         else {
-            "Statut ManageEngine : ARRETE" | Out-File $LogFile -Append
-            Write-Host "ManageEngine : ATTENTION (Arrete)" -ForegroundColor Yellow
+            "Statut Manage Engine : ARRETE" | Out-File $LogFile -Append
+            Write-Host "Manage Engine : ATTENTION (Arrete)" -ForegroundColor Yellow
         }
     }
     catch {
-        "Statut ManageEngine : ERREUR SERVICE" | Out-File $LogFile -Append
-        Write-Host "ManageEngine : ERREUR SERVICE" -ForegroundColor Red
+        "Statut Manage Engine : ERREUR SERVICE" | Out-File $LogFile -Append
+        Write-Host "Manage Engine : ERREUR SERVICE" -ForegroundColor Red
     }
 }
 else {
-    "Statut ManageEngine : DOSSIER ABSENT" | Out-File $LogFile -Append
-    Write-Host "ManageEngine : ERREUR (Dossier absent)" -ForegroundColor Red
+    "Statut Manage Engine : DOSSIER ABSENT" | Out-File $LogFile -Append
+    Write-Host "Manage Engine : ERREUR (Dossier absent)" -ForegroundColor Red
 }
 "---" | Out-File $LogFile -Append
+
+# ----------------------------- Beyond Trust -----------------------------
+
+if (Test-Path "C:\Program Files\BeyondTrust\Jump Client\support.groupe-vivadour.com") {
+    try {
+        $Svc = Get-Service -Name "sra-pin*" -ErrorAction Stop
+        if ($Svc.Status -eq "Running") {
+            "Statut Beyond Trust : OK (Service Demarre)" | Out-File $LogFile -Append
+            Write-Host "Beyond Trust : OK" -ForegroundColor Green
+        }
+        else {
+            "Statut Beyond Trust : ARRETE" | Out-File $LogFile -Append
+            Write-Host "Beyond Trust : ATTENTION (Arrete)" -ForegroundColor Yellow
+        }
+    }
+    catch {
+        "Statut Beyond Trust : ERREUR SERVICE" | Out-File $LogFile -Append
+        Write-Host "Beyond Trust : ERREUR SERVICE" -ForegroundColor Red
+    }
+}
+else {
+    "Beyond Trust : DOSSIER ABSENT" | Out-File $LogFile -Append
+    Write-Host "Beyond Trust : ERREUR (Dossier absent)" -ForegroundColor Red
+}
+"---" | Out-File $LogFile -Append
+
+# ----------------------------- PDF Split and Merge -----------------------------
 
 Check-App -Name "PDFsam Basic" -Path "C:\Program Files\PDFsam Basic\pdfsam.exe"
 "---" | Out-File $LogFile -Append

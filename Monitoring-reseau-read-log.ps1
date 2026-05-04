@@ -18,10 +18,10 @@ $FileBrowser.Filter = "Fichiers Log (*.txt)|*.txt"
 $FileBrowser.Title = "Selectionnez le log a analyser"
 
 if ($FileBrowser.ShowDialog() -eq 'OK') {
-    $logFile = $FileBrowser.FileName
+$logFile = $FileBrowser.FileName
 } else {
-    Write-Host "Action annulee." -ForegroundColor Yellow
-    exit
+Write-Host "Action annulee." -ForegroundColor Yellow
+exit
 }
 
 # 2. Analyse des donnees

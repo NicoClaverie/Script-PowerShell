@@ -7,10 +7,13 @@
 #>
 
 $driversConfig = @(
+    # Pilotes pour imprimantes BROTHER
+    @{ Path = "C:\Imprimantes\BROTHER\Brother Laser Type1 Class Driver 10.0.17119.1"; Name = "Brother Laser Type1 Class Driver" },
     # Pilotes pour imprimantes CANON
     @{ Path = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V230_W64_00\Driver"; Name = "Canon Generic Plus PCL6" },
     @{ Path = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V260_32_64_00\x64\Driver"; Name = "Canon Generic Plus PCL6" },
     @{ Path = "C:\Imprimantes\CANON\GPlus_PCL6_Driver_V290_32_64_00\x64\Driver"; Name = "Canon Generic Plus PCL6" },
+    @{ Path = "C:\Imprimantes\CANON\GPlus_PS3_Driver_V290_32_64_00\x64\Driver"; Name = "Canon Generic Plus PS3" },
     # Pilotes pour imprimantes LEXMARK
     @{ Path = "C:\Imprimantes\LEXMARK\Lexmark_Universal_v2_XL_3_0_2\Drivers\Print\GDI"; Name = "Lexmark Universal v2 XL" },
     # Pilotes pour imprimantes XEROX
@@ -19,16 +22,20 @@ $driversConfig = @(
     @{ Path = "C:\Imprimantes\XEROX\UNIV_5.548.8.0_PCL_x64"; Name = "Xerox Global Print Driver PCL" },
     @{ Path = "C:\Imprimantes\XEROX\UNIV_5.548.8.0_PCL6_x64"; Name = "Xerox Global Print Driver PCL6" },
     @{ Path = "C:\Imprimantes\XEROX\UNIV_5.548.8.0_PS_x64"; Name = "Xerox Global Print Driver PS" },
-    @{ Path = "C:\Imprimantes\XEROX\UNIV_5.645.5.0_PCL6_x64"; Name = "Xerox Global Print Driver PCL6" },    
+    @{ Path = "C:\Imprimantes\XEROX\UNIV_5.645.5.0_PCL6_x64\UNIV_5.645.5.0_PCL6_x64_Driver.inf"; Name = "Xerox Global Print Driver PCL6" },
+    @{ Path = "C:\Imprimantes\XEROX\UNIV_5.5759.5.0_PCL6_x64"; Name = "Xerox Global Print Driver PCL6" },    
+    @{ Path = "C:\Imprimantes\XEROX\UNIV_4.548.8.0_PCL6_x64"; Name = "Xerox Global Print Driver PCL6" },
+    @{ Path = "C:\Imprimantes\XEROX\UNIV_5.703.12.0_PCL6_x64\UNIV_5.703.12.0_PCL6_x64_Driver.inf"; Name = "Xerox Global Print Driver PCL6" },
     # Pilotes pour imprimantes HP
     @{ Path = "C:\Imprimantes\HP\pcl6-x64-6.9.0.24630"; Name = "HP Universal Printing PCL 6" },
     @{ Path = "C:\Imprimantes\HP\pcl6-x64-6.6.0.23029"; Name = "HP Universal Printing PCL 6" },
     @{ Path = "C:\Imprimantes\HP\pcl6-x64-7.0.1.24923"; Name = "HP Universal Printing PCL 6" },
     @{ Path = "C:\Imprimantes\HP\pcl6-x64-6.0.0.18849"; Name = "HP Universal Printing PCL 6" },
-    @{ Path = "C:\Imprimantes\HP\pcl6-x64-7.9.0.26347"; Name = "HP Universal Printing PCL 6" }
+    @{ Path = "C:\Imprimantes\HP\pcl6-x64-7.9.0.26347"; Name = "HP Universal Printing PCL 6" },
+    @{ Path = "C:\Imprimantes\HP\pcl6-x64-7.0.0.24832"; Name = "HP Universal Printing PCL 6" }
 )
 
-Write-Host "--- DEBUT DE L'INSTALLATION (AVEC RETRY) ---" -ForegroundColor Cyan
+Write-Host "--- DEBUT DE L'INSTALLATION ---" -ForegroundColor Cyan
 
 foreach ($driver in $driversConfig) {
     $path = $driver.Path

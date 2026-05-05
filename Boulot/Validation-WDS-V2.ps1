@@ -126,13 +126,6 @@ catch {
 #                            Verifications Fichiers de base
 #############################################################################
 
-if (Test-Path "C:\DefaultApps\AppDefault.xml") {
-    "Fichier AppDefault.xml : OK" | Out-File $LogFile -Append; Write-Host "AppDefault.xml : OK" -ForegroundColor Green
-}
-else {
-    "Fichier AppDefault.xml : ABSENT" | Out-File $LogFile -Append; Write-Host "AppDefault.xml : ERREUR" -ForegroundColor Red
-}
-
 if (Test-Path "C:\Windows\Certificat\_.groupe-terresdusud.fr.crt") {
     "Certificat GLPI : OK" | Out-File $LogFile -Append; Write-Host "Certificat GLPI : OK" -ForegroundColor Green
 }
@@ -143,52 +136,71 @@ else {
 #############################################################################
 #                            Partie Imprimantes (Drivers)
 #############################################################################
-"--- Verification des Pilotes Systemes ---" | Out-File $LogFile -Append
-Write-Host "--- Verification des Pilotes Imprimantes (Systeme) ---" -ForegroundColor Cyan
 
-# 1. Ta liste de référence (Data que tu m'as fournie)
+"--- Verification des Pilotes Imprimantes ---" | Out-File $LogFile -Append
+Write-Host "--- Verification des Pilotes Imprimantes ---" -ForegroundColor Cyan
+
+# 1. Ta liste de référence (basée sur ton dernier relevé)
 $ReferenceDrivers = @'
-"Name";"DriverVersion"
-"Canon Generic Plus PCL6";"563336500477952"
-"HP Universal Printing PCL 6";"17171455343159019"
-"Lexmark Universal v2 XL";"844424930263040"
-"Xerox Global Print Driver PCL";"1561626606764556288"
-"Xerox Global Print Driver PCL6";"14365076295421788160"
-"Xerox Global Print Driver PS";"1561626606764556288"
-"Xerox GPD PCL6 V4.0.548.8.0";"1561626606764556288"
-"Xerox GPD PCL6 V5.703.12.0";"1605256946141626368"
+ProviderName;Version;OriginalName
+"Lexmark International";"3.0.2.0";"lmud1p40.inf"
+"Canon";"2.60.0.0";"cnp60ma64.inf"
+"Canon";"2.90.0.0";"cnp60ma64.inf"
+"Canon";"2.30.0.0";"cnp60ma64.inf"
+"Canon";"2.90.0.0";"cns30ma64.inf"
+"Xerox";"5548.800.0.0";"x2univp.inf"
+"Xerox";"5548.800.0.0";"x2univx.inf"
+"Xerox";"5548.800.0.0";"x2univl.inf"
+"Xerox";"51035.200.0.0";"x3univx.inf"
+"Xerox";"5759.500.0.0";"x3univx.inf"
+"Xerox";"5496.700.0.0";"x2univx.inf"
+"Xerox";"5645.500.0.0";"x3univx.inf"
+"Xerox";"5703.1200.0.0";"x3univx.inf"
+"HP";"61.215.1.23029";"hpcu215u.inf"
+"HP";"61.255.1.24923";"hpcu255u.inf"
+"HP";"61.175.1.18849";"hpcu175u.inf"
+"HP";"61.345.1.26347";"hpcu345u.inf"
+"HP";"61.250.1.24832";"hpcu250u.inf"
+"HP";"61.240.1.24630";"hpcu240u.inf"
+"Brother";"10.0.17119.1";"prnbrcl1.inf"
 '@ | ConvertFrom-Csv -Delimiter ";"
 
-# 2. Récupération des drivers réellement installés sur la machine
-$LocalDrivers = Get-PrinterDriver | Select-Object Name, DriverVersion
+# On charge le magasin une seule fois
+$Magasin = Get-WindowsDriver -Online -All | Where-Object { $_.ClassName -eq "Printer" }
 
+$TotalMatch = 0
 $GlobalPrinterOK = $true
 
 foreach ($Ref in $ReferenceDrivers) {
-    # On cherche si le driver est présent
-    $Match = $LocalDrivers | Where-Object { $_.Name -eq $Ref.Name }
+    # On cherche le pilote qui possède le bon OriginalFileName ET la bonne version
+    $Match = $Magasin | Where-Object { 
+        # On extrait juste le nom du fichier (ex: hpcu255u.inf) du chemin complet
+        $FileName = $_.OriginalFileName -split "\\" | Select-Object -Last 1
+        
+        # On compare le nom du fichier ET la version
+        $FileName -eq $Ref.OriginalName -and $_.Version -eq $Ref.Version 
+    }
 
-    if ($null -eq $Match) {
-        $msg = "Pilote MANQUANT : $($Ref.Name)"
-        $msg | Out-File $LogFile -Append
-        Write-Host "[ERREUR] $msg" -ForegroundColor Red
+    if ($null -ne $Match) {
+        Write-Host "[OK] $($Ref.ProviderName) v$($Ref.Version) ($($Ref.OriginalName))" -ForegroundColor Green
+        $TotalMatch++
+    } else {
+        Write-Host "[X] MANQUANT : $($Ref.ProviderName) v$($Ref.Version) ($($Ref.OriginalName))" -ForegroundColor Red
         $GlobalPrinterOK = $false
-    }
-    elseif ($Match.DriverVersion -ne $Ref.DriverVersion) {
-        $msg = "Pilote VERSION KO : $($Ref.Name) (Attendu: $($Ref.DriverVersion) | Trouve: $($Match.DriverVersion))"
-        $msg | Out-File $LogFile -Append
-        Write-Host "[ATTENTION] $msg" -ForegroundColor Yellow
-        $GlobalPrinterOK = $false
-    }
-    else {
-        # Optionnel : décommenter la ligne suivante si tu veux voir les "OK" dans le log
-        # "Pilote $($Ref.Name) : OK" | Out-File $LogFile -Append
     }
 }
 
+# 4. Conclusion
+
 if ($GlobalPrinterOK) {
-    "Tous les pilotes d'impression sont conformes : OK" | Out-File $LogFile -Append
-    Write-Host "Pilotes d'impression : TOUS CONFORMES" -ForegroundColor Green
+    $msgFinal = "SUCCESS : $TotalMatch / $($ReferenceDrivers.Count) pilote installes."
+    $msgFinal | Out-File $LogFile -Append
+    Write-Host $msgFinal -ForegroundColor Green
+}
+else {
+    $msgFinal = "ECHEC : Il manque des pilotes sur cette machine ($TotalMatch / $($ReferenceDrivers.Count) trouves)."
+    $msgFinal | Out-File $LogFile -Append
+    Write-Host $msgFinal -ForegroundColor White -BackgroundColor Red
 }
 
 "---" | Out-File $LogFile -Append

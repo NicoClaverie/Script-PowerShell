@@ -25,7 +25,10 @@ if (!(Test-Path "C:\Temp")) { New-Item -ItemType Directory -Path "C:\Temp" | Out
 "=======================================================" | Out-File $LogFile
 "Deploiement WDS verifie le $DateExecution" | Out-File $LogFile -Append
 "Hostname : $env:COMPUTERNAME / Numero d'inventaire : $NumInventaire" | Out-File $LogFile -Append
-
+# Nom description de l'ordinateur
+$MachineDesc = (Get-CimInstance Win32_OperatingSystem).Description
+Write-Host "Description : $MachineDesc"
+"Description : $MachineDesc" | Out-File $LogFile -Append
 
 #############################################################################
 #                            Partie Active Directory

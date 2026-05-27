@@ -1,3 +1,9 @@
+################################
+#
+#   Script a lancer via GPEDIT ou GPO et un wrapper car necessite des droits Système  
+#
+################################
+
 # Répertoire contenant les images
 $AvatarFolder = "C:\Users\Public\Avatars"
 $Avatar_Toto = Join-Path $AvatarFolder "toto.jpg"

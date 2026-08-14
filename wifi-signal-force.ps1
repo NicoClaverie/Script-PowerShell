@@ -3,11 +3,14 @@
 #  Script pour mesurer la force d'un signal wifi et le mettre dans un fichier de log  #
 #                                                                                     #
 #                              Auteur : Nicolas CLAVERIE                              #
+#                                Aide : Gemini                                        #
 #                                                                                     #
 #######################################################################################
 
+# Configuration de l'encodage pour bien gérer les accents de netsh
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-Write-Host "MONITORING FORCE SIGNAL WIFI"
+Write-Host "MONITORING FORCE SIGNAL & BORNE WIFI"
 Write-Host " "
 
 # Formatage de la date pour le nom du fichier de log
@@ -35,24 +38,41 @@ if (-not (Test-Path -path $LogDirectory -PathType Container)) {
     New-Item -Path $LogDirectory -ItemType Directory -Force | Out-Null
 }
 
-# Debut de la boucle infini pour mesurer la force du signal
+# Debut de la boucle infinie
 while ($true) {
-    # Récupération de l'information sur la force du signal
-    $signalLine = (netsh wlan show interfaces) -match "^\s+Signal"
+    # Récupération de netsh
+    $wlanInfo = netsh wlan show interfaces
+
+    # Extraction du signal
+    $signalLine = $wlanInfo -match "^\s+Signal"
     
-    # Mise en place de l'horodatage 
+    # Extraction de la borne : on cherche "Service Set Identifier" ou "BSSID" 
+    # pour éviter tout conflit avec les caractères 'accès' ou 'd’'
+    $bssidLine  = $wlanInfo -match "Service Set Identifier|BSSID"
+
+    # Horodatage
     $timestamp = Get-Date -Format "HH:mm:ss"
 
-    # Verification de la présence du signal wifi
-    if ($signalLine) {
-        $signalStrength = $signalLine -replace "^\s+Signal\s+:\s+", ""
-        Write-Host "$timestamp - Force du signal : $signalStrength"
-        Add-Content -path $LogFilePath -Value "$timestamp - Force du signal : $signalStrength"
+    # Vérification
+    if ($signalLine -and $bssidLine) {
+        # Split sur le dernier caractère ':' pour récupérer l'adresse MAC/la valeur propre
+        $signalStrength = ($signalLine -split ":")[-1].Trim()
+        
+        # On découpe sur le ':' pour isoler l'adresse MAC (24:1f:bd...)
+        $bssidRaw = ($bssidLine -split ":")[1..6] -join ":"
+        $bssid    = $bssidRaw.Trim()
+
+        $logMessage = "$timestamp - Borne (BSSID) : $bssid | Signal : $signalStrength"
+
+        Write-Host $logMessage
+        Add-Content -path $LogFilePath -Value $logMessage
     }
     else {
-        Write-Host "$timestamp - WiFi non connecte ou interface introuvable"
-        Add-Content -path $LogFilePath -Value "$timestamp - WiFi non connecte ou interface introuvable"
+        $logMessage = "$timestamp - WiFi non connecte ou interface introuvable"
+        Write-Host $logMessage
+        Add-Content -path $LogFilePath -Value $logMessage
     }
-    # Pause de 2 secondes entre chaque relevé
+
+    # Pause de 2 secondes
     Start-Sleep -Seconds 2
 }
